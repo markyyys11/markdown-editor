@@ -1,25 +1,33 @@
-import React, {useCallback, useEffect, useState} from 'react';
-import {FlatList, RefreshControl, StyleSheet, View} from 'react-native';
-import {Banner} from '../components/Banner';
-import {Button} from '../components/Button';
-import {CenteredMessage} from '../components/CenteredMessage';
-import {ListRow} from '../components/ListRow';
-import {ScreenHeader} from '../components/ScreenHeader';
-import {GitHubError, REPOS_PAGE_SIZE} from '../github/client';
-import type {RepoSummary} from '../github/types';
-import {useAuth, useGitHub} from '../state/AuthContext';
-import {palette, spacing} from '../theme/theme';
-import {formatDay} from '../util/dates';
+import React, { useCallback, useEffect, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Banner } from '../components/Banner';
+import { Button } from '../components/Button';
+import { CenteredMessage } from '../components/CenteredMessage';
+import { ListRow } from '../components/ListRow';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { GitHubError, REPOS_PAGE_SIZE } from '../github/client';
+import type { RepoSummary } from '../github/types';
+import { useAuth, useGitHub } from '../state/AuthContext';
+import { spacing } from '../theme/theme';
+import { useTheme } from '../themes/ThemeProvider';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
+import { formatDay } from '../util/dates';
 
 type Props = {
   onOpenRepo(repo: RepoSummary): void;
+  onOpenThemes(): void;
 };
 
-export function ReposScreen({onOpenRepo}: Props) {
+export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
   const client = useGitHub();
-  const {user, signOut} = useAuth();
+  const { user, signOut } = useAuth();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [repos, setRepos] = useState<RepoSummary[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -79,7 +87,7 @@ export function ReposScreen({onOpenRepo}: Props) {
       <FlatList
         data={repos}
         keyExtractor={repo => String(repo.id)}
-        renderItem={({item}) => (
+        renderItem={({ item }) => (
           <ListRow
             title={item.isPrivate ? `${item.name} · приватный` : item.name}
             subtitle={item.fullName}
@@ -91,8 +99,8 @@ export function ReposScreen({onOpenRepo}: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            colors={[palette.accent]}
-            progressBackgroundColor={palette.canvasSubtle}
+            colors={[theme.ui.accent]}
+            progressBackgroundColor={theme.ui.canvasSubtle}
           />
         }
         contentContainerStyle={repos.length === 0 ? styles.empty : undefined}
@@ -123,6 +131,7 @@ export function ReposScreen({onOpenRepo}: Props) {
         title="Репозитории"
         subtitle={user?.login ?? 'GitHub'}
         actions={[
+          { label: 'Тема', onPress: onOpenThemes },
           {
             label: 'Выйти',
             onPress: () => {
@@ -144,8 +153,9 @@ export function ReposScreen({onOpenRepo}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: palette.canvasDefault},
-  empty: {flexGrow: 1},
-  more: {margin: spacing.lg},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.ui.canvasDefault },
+    empty: { flexGrow: 1 },
+    more: { margin: spacing.lg },
+  });

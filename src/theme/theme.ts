@@ -1,8 +1,14 @@
-export {monoFontStack, palette} from '../../shared/palette';
+/**
+ * Design tokens that do not depend on the theme.
+ *
+ * Colours live in the themes themselves (`src/themes/generated/themes.ts`), so
+ * this file only holds the measurements every theme shares.
+ */
+export { monoFontStack } from '../../shared/palette';
 
-export const spacing = {xs: 4, sm: 8, md: 12, lg: 16, xl: 24} as const;
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;
 
-export const radius = {sm: 6, md: 8, lg: 12} as const;
+export const radius = { sm: 6, md: 8, lg: 12 } as const;
 
 /**
  * Type scale for the app chrome. Deliberately small and flat: the Markdown

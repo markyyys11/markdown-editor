@@ -1,12 +1,14 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {BackHandler, StyleSheet, View} from 'react-native';
-import {BrowseScreen} from '../screens/BrowseScreen';
-import {EditorScreen} from '../screens/EditorScreen';
-import {ReposScreen} from '../screens/ReposScreen';
-import {palette} from '../theme/theme';
-import type {Route} from './routes';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
+import { BrowseScreen } from '../screens/BrowseScreen';
+import { EditorScreen } from '../screens/EditorScreen';
+import { ReposScreen } from '../screens/ReposScreen';
+import { ThemeScreen } from '../screens/ThemeScreen';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
+import type { Route } from './routes';
 
-type Entry = {id: number; route: Route};
+type Entry = { id: number; route: Route };
 
 function renderRoute(
   route: Route,
@@ -15,7 +17,14 @@ function renderRoute(
 ) {
   switch (route.name) {
     case 'repos':
-      return <ReposScreen onOpenRepo={repo => push({name: 'browse', repo, path: ''})} />;
+      return (
+        <ReposScreen
+          onOpenRepo={repo => push({ name: 'browse', repo, path: '' })}
+          onOpenThemes={() => push({ name: 'themes' })}
+        />
+      );
+    case 'themes':
+      return <ThemeScreen onBack={pop} />;
     case 'browse':
       return (
         <BrowseScreen
@@ -23,7 +32,7 @@ function renderRoute(
           path={route.path}
           onBack={pop}
           onOpenDirectory={path =>
-            push({name: 'browse', repo: route.repo, path})
+            push({ name: 'browse', repo: route.repo, path })
           }
           onOpenFile={file =>
             push({
@@ -60,15 +69,17 @@ function renderRoute(
 }
 
 /**
- * A three-screen stack: repositories, a directory listing, the editor.
+ * A stack of screens: repositories, a directory listing, the editor, the theme
+ * list.
  *
  * Screens below the top one stay mounted but hidden, so going back restores the
  * directory you were in, its scroll position and its branch — and so that a
  * link followed from a document does not discard the document it came from.
  */
 export function AppNavigator() {
+  const styles = useThemedStyles(createStyles);
   const [stack, setStack] = useState<Entry[]>(() => [
-    {id: 0, route: {name: 'repos'}},
+    { id: 0, route: { name: 'repos' } },
   ]);
   const nextId = useRef(1);
   const stackRef = useRef(stack);
@@ -80,7 +91,7 @@ export function AppNavigator() {
   const push = useCallback((route: Route) => {
     nextId.current += 1;
     const id = nextId.current;
-    setStack(current => [...current, {id, route}]);
+    setStack(current => [...current, { id, route }]);
   }, []);
 
   const pop = useCallback(() => {
@@ -115,9 +126,8 @@ export function AppNavigator() {
             key={entry.id}
             style={[styles.screen, isTop ? null : styles.hidden]}
             pointerEvents={isTop ? 'auto' : 'none'}
-            importantForAccessibility={
-              isTop ? 'auto' : 'no-hide-descendants'
-            }>
+            importantForAccessibility={isTop ? 'auto' : 'no-hide-descendants'}
+          >
             {renderRoute(entry.route, push, pop)}
           </View>
         );
@@ -126,11 +136,12 @@ export function AppNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: palette.canvasDefault},
-  screen: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: palette.canvasDefault,
-  },
-  hidden: {display: 'none'},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.ui.canvasDefault },
+    screen: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: theme.ui.canvasDefault,
+    },
+    hidden: { display: 'none' },
+  });

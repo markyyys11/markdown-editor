@@ -1,11 +1,11 @@
-import {utf8ToBase64} from '../src/github/base64';
-import {GitHubClient, GitHubError} from '../src/github/client';
-import type {GitHubErrorKind} from '../src/github/client';
+import { utf8ToBase64 } from '../src/github/base64';
+import { GitHubClient, GitHubError } from '../src/github/client';
+import type { GitHubErrorKind } from '../src/github/client';
 
 type FakeResponse = {
   ok: boolean;
   status: number;
-  headers: {get(name: string): string | null};
+  headers: { get(name: string): string | null };
   json(): Promise<unknown>;
 };
 
@@ -25,7 +25,7 @@ const respond = (
 ): FakeResponse => ({
   ok: status >= 200 && status < 300,
   status,
-  headers: {get: name => headers[name.toLowerCase()] ?? null},
+  headers: { get: name => headers[name.toLowerCase()] ?? null },
   json: async () => body,
 });
 
@@ -34,18 +34,18 @@ const originalFetch: typeof fetch = globalThis.fetch;
 
 beforeEach(() => {
   fetchMock = jest.fn();
-  (globalThis as unknown as {fetch: typeof fetch}).fetch =
+  (globalThis as unknown as { fetch: typeof fetch }).fetch =
     fetchMock as unknown as typeof fetch;
 });
 
 afterEach(() => {
-  (globalThis as unknown as {fetch: typeof fetch}).fetch = originalFetch;
+  (globalThis as unknown as { fetch: typeof fetch }).fetch = originalFetch;
 });
 
 const lastRequest = (): CapturedRequest => {
-  const {calls} = fetchMock.mock;
+  const { calls } = fetchMock.mock;
   const [url, init] = calls[calls.length - 1];
-  return {url, init};
+  return { url, init };
 };
 
 const bodyOf = (): Record<string, unknown> =>
@@ -72,10 +72,15 @@ describe('readFile', () => {
       }),
     );
 
-    const file = await client().readFile('Altey', 'lab-docs', 'docs/анализ.md', 'main');
+    const file = await client().readFile(
+      'Altey',
+      'lab-docs',
+      'docs/анализ.md',
+      'main',
+    );
 
-    expect(file).toEqual({path: 'docs/анализ.md', sha: 'blob-1', text});
-    const {url, init} = lastRequest();
+    expect(file).toEqual({ path: 'docs/анализ.md', sha: 'blob-1', text });
+    const { url, init } = lastRequest();
     expect(url).toBe(
       'https://api.github.com/repos/Altey/lab-docs/contents/docs/%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7.md?ref=main',
     );
@@ -87,10 +92,12 @@ describe('readFile', () => {
 
   it('explains the 1 MB limit when GitHub sends no content', async () => {
     fetchMock.mockResolvedValueOnce(
-      respond({path: 'huge.md', sha: 's', size: 2_000_000, encoding: 'none'}),
+      respond({ path: 'huge.md', sha: 's', size: 2_000_000, encoding: 'none' }),
     );
 
-    const failure = await failureOf(client().readFile('o', 'r', 'huge.md', 'main'));
+    const failure = await failureOf(
+      client().readFile('o', 'r', 'huge.md', 'main'),
+    );
 
     expect(failure.message).toMatch(/1 МБ/);
   });
@@ -98,7 +105,7 @@ describe('readFile', () => {
 
 describe('writeFile', () => {
   it('PUTs base64 content, the branch and the blob sha', async () => {
-    fetchMock.mockResolvedValueOnce(respond({commit: {sha: 'commit-9'}}));
+    fetchMock.mockResolvedValueOnce(respond({ commit: { sha: 'commit-9' } }));
 
     const commitSha = await client().writeFile({
       owner: 'Altey',
@@ -111,7 +118,7 @@ describe('writeFile', () => {
     });
 
     expect(commitSha).toBe('commit-9');
-    const {url, init} = lastRequest();
+    const { url, init } = lastRequest();
     expect(url).toBe(
       'https://api.github.com/repos/Altey/lab-docs/contents/docs/%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7.md',
     );
@@ -126,7 +133,7 @@ describe('writeFile', () => {
   });
 
   it('omits sha when the file is new', async () => {
-    fetchMock.mockResolvedValueOnce(respond({commit: {sha: 'commit-1'}}));
+    fetchMock.mockResolvedValueOnce(respond({ commit: { sha: 'commit-1' } }));
 
     await client().writeFile({
       owner: 'o',
@@ -162,7 +169,7 @@ describe('listing', () => {
           description: null,
           default_branch: 'develop',
           updated_at: '2026-10-01T09:00:00Z',
-          owner: {login: 'Altey'},
+          owner: { login: 'Altey' },
         },
       ]),
     );
@@ -184,12 +191,23 @@ describe('listing', () => {
   it('reads a directory listing at a ref', async () => {
     fetchMock.mockResolvedValueOnce(
       respond([
-        {name: 'docs', path: 'docs', type: 'dir', sha: 'd1', size: 0},
-        {name: 'README.md', path: 'README.md', type: 'file', sha: 'f1', size: 120},
+        { name: 'docs', path: 'docs', type: 'dir', sha: 'd1', size: 0 },
+        {
+          name: 'README.md',
+          path: 'README.md',
+          type: 'file',
+          sha: 'f1',
+          size: 120,
+        },
       ]),
     );
 
-    const entries = await client().listDirectory('Altey', 'lab-docs', '', 'develop');
+    const entries = await client().listDirectory(
+      'Altey',
+      'lab-docs',
+      '',
+      'develop',
+    );
 
     expect(entries).toHaveLength(2);
     expect(entries[1]).toEqual({
@@ -206,7 +224,7 @@ describe('listing', () => {
 
   it('reports a file where a directory was expected', async () => {
     fetchMock.mockResolvedValueOnce(
-      respond({name: 'a.md', path: 'a.md', type: 'file', sha: 'x', size: 1}),
+      respond({ name: 'a.md', path: 'a.md', type: 'file', sha: 'x', size: 1 }),
     );
 
     const failure = await failureOf(
@@ -217,7 +235,9 @@ describe('listing', () => {
   });
 
   it('lists branch names', async () => {
-    fetchMock.mockResolvedValueOnce(respond([{name: 'main'}, {name: 'develop'}]));
+    fetchMock.mockResolvedValueOnce(
+      respond([{ name: 'main' }, { name: 'develop' }]),
+    );
 
     await expect(client().listBranches('Altey', 'lab-docs')).resolves.toEqual([
       'main',
@@ -237,7 +257,9 @@ describe('error classification', () => {
   ];
 
   it.each(cases)('maps HTTP %i to %s', async (status, kind) => {
-    fetchMock.mockResolvedValueOnce(respond({message: 'from the API'}, status));
+    fetchMock.mockResolvedValueOnce(
+      respond({ message: 'from the API' }, status),
+    );
 
     const failure = await failureOf(client().getUser());
 
@@ -247,7 +269,7 @@ describe('error classification', () => {
 
   it('maps a spent rate limit to rateLimit, not forbidden', async () => {
     fetchMock.mockResolvedValueOnce(
-      respond({message: 'API rate limit exceeded'}, 403, {
+      respond({ message: 'API rate limit exceeded' }, 403, {
         'x-ratelimit-remaining': '0',
       }),
     );
@@ -267,7 +289,9 @@ describe('error classification', () => {
   });
 
   it('keeps the API message for diagnostics while showing Russian to the user', async () => {
-    fetchMock.mockResolvedValueOnce(respond({message: 'Bad credentials'}, 401));
+    fetchMock.mockResolvedValueOnce(
+      respond({ message: 'Bad credentials' }, 401),
+    );
 
     const failure = await failureOf(client().getUser());
 
@@ -279,7 +303,7 @@ describe('error classification', () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 502,
-      headers: {get: () => null},
+      headers: { get: () => null },
       json: async () => {
         throw new Error('not json');
       },

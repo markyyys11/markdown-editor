@@ -1,6 +1,9 @@
 import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {fontSize, monoFontStack, palette, spacing} from '../theme/theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { fontSize, monoFontStack, spacing } from '../theme/theme';
+import { useTheme } from '../themes/ThemeProvider';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
 
 type Props = {
   title: string;
@@ -19,10 +22,16 @@ export function ListRow({
   disabled = false,
   onPress,
 }: Props) {
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const content = (
     <>
       <View style={styles.text}>
-        <Text style={[styles.title, disabled ? styles.muted : null]} numberOfLines={1}>
+        <Text
+          style={[styles.title, disabled ? styles.muted : null]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         {subtitle !== undefined ? (
@@ -45,39 +54,41 @@ export function ListRow({
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={onPress}
-      android_ripple={{color: palette.canvasSubtle}}
-      style={({pressed}) => [styles.row, pressed ? styles.pressed : null]}>
+      android_ripple={{ color: theme.ui.canvasSubtle }}
+      style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
+    >
       {content}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: 54,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.borderMuted,
-  },
-  pressed: {backgroundColor: palette.canvasSubtle},
-  text: {flex: 1},
-  title: {
-    color: palette.fgDefault,
-    fontSize: fontSize.body,
-  },
-  muted: {color: palette.fgSubtle},
-  subtitle: {
-    color: palette.fgMuted,
-    fontSize: fontSize.caption,
-    fontFamily: monoFontStack,
-    marginTop: 2,
-  },
-  trailing: {
-    color: palette.fgSubtle,
-    fontSize: fontSize.caption,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 54,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.ui.borderMuted,
+    },
+    pressed: { backgroundColor: theme.ui.canvasSubtle },
+    text: { flex: 1 },
+    title: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.body,
+    },
+    muted: { color: theme.ui.fgSubtle },
+    subtitle: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.caption,
+      fontFamily: monoFontStack,
+      marginTop: 2,
+    },
+    trailing: {
+      color: theme.ui.fgSubtle,
+      fontSize: fontSize.caption,
+    },
+  });

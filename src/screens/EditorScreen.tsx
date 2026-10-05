@@ -1,36 +1,40 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {StyleSheet, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import type {DocumentMode, InsertRequest} from '../../shared/protocol';
-import {Banner} from '../components/Banner';
-import type {BannerKind} from '../components/Banner';
-import {Button} from '../components/Button';
-import {CenteredMessage} from '../components/CenteredMessage';
-import {PromptDialog} from '../components/PromptDialog';
-import {ScreenHeader} from '../components/ScreenHeader';
-import {SegmentedControl} from '../components/SegmentedControl';
-import {SymbolBar} from '../components/SymbolBar';
-import {TabKey} from '../components/TabKey';
-import {GitHubError} from '../github/client';
-import {resolveLink} from '../github/links';
-import {baseName} from '../github/paths';
-import type {RepoSummary, WriteFileInput} from '../github/types';
-import {useKeyboardInset} from '../hooks/useKeyboardInset';
-import {TAB_TEXT} from '../markdown/symbols';
-import type {MarkdownSymbol} from '../markdown/symbols';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { DocumentMode, InsertRequest } from '../../shared/protocol';
+import { Banner } from '../components/Banner';
+import type { BannerKind } from '../components/Banner';
+import { Button } from '../components/Button';
+import { CenteredMessage } from '../components/CenteredMessage';
+import { PromptDialog } from '../components/PromptDialog';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { SymbolBar } from '../components/SymbolBar';
+import { TabKey } from '../components/TabKey';
+import { ThemeSheet } from '../components/ThemeSheet';
+import { GitHubError } from '../github/client';
+import { resolveLink } from '../github/links';
+import { baseName } from '../github/paths';
+import type { RepoSummary, WriteFileInput } from '../github/types';
+import { useKeyboardInset } from '../hooks/useKeyboardInset';
+import { TAB_TEXT } from '../markdown/symbols';
+import type { MarkdownSymbol } from '../markdown/symbols';
 import {
   confirmDiscard,
   useUnsavedChangesGuard,
 } from '../navigation/useUnsavedChangesGuard';
-import {useGitHub} from '../state/AuthContext';
-import {palette, spacing} from '../theme/theme';
-import {openExternalUrl} from '../util/urls';
-import {MarkdownWebView} from '../webview/MarkdownWebView';
-import type {MarkdownWebViewHandle} from '../webview/MarkdownWebView';
+import { useGitHub } from '../state/AuthContext';
+import { spacing } from '../theme/theme';
+import { useTheme } from '../themes/ThemeProvider';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
+import { openExternalUrl } from '../util/urls';
+import { MarkdownWebView } from '../webview/MarkdownWebView';
+import type { MarkdownWebViewHandle } from '../webview/MarkdownWebView';
 
-const MODES: ReadonlyArray<{value: DocumentMode; label: string}> = [
-  {value: 'edit', label: 'Правка'},
-  {value: 'preview', label: 'Просмотр'},
+const MODES: ReadonlyArray<{ value: DocumentMode; label: string }> = [
+  { value: 'edit', label: 'Правка' },
+  { value: 'preview', label: 'Просмотр' },
 ];
 
 type Notice = {
@@ -58,6 +62,8 @@ export function EditorScreen({
   onOpenMarkdown,
 }: Props) {
   const client = useGitHub();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const editor = useRef<MarkdownWebViewHandle | null>(null);
   const loadedOnce = useRef(false);
   const insets = useSafeAreaInsets();
@@ -70,12 +76,13 @@ export function EditorScreen({
   const [content, setContent] = useState('');
   const [baseline, setBaseline] = useState('');
   /** What the editor must display, plus a counter that forces a reload. */
-  const [documentToLoad, setDocumentToLoad] = useState({text: '', key: 0});
+  const [documentToLoad, setDocumentToLoad] = useState({ text: '', key: 0 });
   const [sha, setSha] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [mode, setMode] = useState<DocumentMode>('edit');
   const [notice, setNotice] = useState<Notice | null>(null);
   const [commitOpen, setCommitOpen] = useState(false);
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [commitError, setCommitError] = useState<string | null>(null);
 
@@ -92,7 +99,7 @@ export function EditorScreen({
         kind: 'info',
         message: 'Новый файл. Он появится в репозитории после первого коммита.',
       });
-      setDocumentToLoad(current => ({text: '', key: current.key + 1}));
+      setDocumentToLoad(current => ({ text: '', key: current.key + 1 }));
       return;
     }
 
@@ -107,7 +114,7 @@ export function EditorScreen({
       setSha(file.sha);
       setDirty(false);
       setStatus('ready');
-      setDocumentToLoad(current => ({text: file.text, key: current.key + 1}));
+      setDocumentToLoad(current => ({ text: file.text, key: current.key + 1 }));
     } catch (failure) {
       const message =
         failure instanceof GitHubError
@@ -115,7 +122,7 @@ export function EditorScreen({
           : 'Не удалось открыть файл.';
       if (loadedOnce.current) {
         // The editor is already usable; a failed refresh must not tear it down.
-        setNotice({kind: 'error', message});
+        setNotice({ kind: 'error', message });
       } else {
         setLoadError(message);
         setStatus('error');
@@ -156,13 +163,13 @@ export function EditorScreen({
 
   const insertSymbol = useCallback(
     (symbol: MarkdownSymbol) => {
-      insert({text: symbol.symbol, closer: symbol.closer});
+      insert({ text: symbol.symbol, closer: symbol.closer });
     },
     [insert],
   );
 
   const insertTab = useCallback(() => {
-    insert({text: TAB_TEXT, closer: null});
+    insert({ text: TAB_TEXT, closer: null });
   }, [insert]);
 
   const handleOpenLink = useCallback(
@@ -192,7 +199,7 @@ export function EditorScreen({
         setDirty(false);
         setCommitOpen(false);
         setCommitError(null);
-        setNotice({kind: 'info', message: 'В файле нет изменений.'});
+        setNotice({ kind: 'info', message: 'В файле нет изменений.' });
         return;
       }
 
@@ -261,13 +268,18 @@ export function EditorScreen({
     <View
       // The padding is whatever the platform did not already take care of when
       // the keyboard appeared; see useKeyboardInset.
-      style={[styles.root, {paddingBottom: keyboard.inset}]}
-      onLayout={keyboard.onLayout}>
+      style={[styles.root, { paddingBottom: keyboard.inset }]}
+      onLayout={keyboard.onLayout}
+    >
       <ScreenHeader
         title={baseName(path)}
         subtitle={`${repo.fullName} · ${branch}`}
         onBack={leave}
         actions={[
+          {
+            label: 'Тема',
+            onPress: () => setThemeSheetOpen(true),
+          },
           {
             label: dirty ? 'Коммит •' : 'Коммит',
             emphasis: dirty,
@@ -327,9 +339,10 @@ export function EditorScreen({
             document={documentToLoad.text}
             documentKey={documentToLoad.key}
             mode={mode}
+            theme={theme}
             onChangeText={handleChangeText}
             onOpenLink={handleOpenLink}
-            onError={message => setNotice({kind: 'error', message})}
+            onError={message => setNotice({ kind: 'error', message })}
           />
           {/* Floating inside the editing area, so it sits just above the
               symbol bar without taking a row of its own. */}
@@ -346,6 +359,11 @@ export function EditorScreen({
           }
         />
       ) : null}
+
+      <ThemeSheet
+        visible={themeSheetOpen}
+        onClose={() => setThemeSheetOpen(false)}
+      />
 
       <PromptDialog
         visible={commitOpen}
@@ -369,18 +387,19 @@ export function EditorScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: palette.canvasDefault},
-  editor: {flex: 1},
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.borderMuted,
-  },
-  discard: {paddingHorizontal: spacing.md},
-  notice: {paddingTop: spacing.md},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.ui.canvasDefault },
+    editor: { flex: 1 },
+    toolbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.ui.borderMuted,
+    },
+    discard: { paddingHorizontal: spacing.md },
+    notice: { paddingTop: spacing.md },
+  });

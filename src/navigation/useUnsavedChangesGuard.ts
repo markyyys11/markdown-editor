@@ -1,5 +1,5 @@
-import {useEffect, useRef} from 'react';
-import {Alert, BackHandler} from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Alert, BackHandler } from 'react-native';
 
 /**
  * Asks before throwing away edits.
@@ -12,8 +12,8 @@ export function confirmDiscard(onConfirm: () => void): void {
     'Есть несохранённые правки',
     'Изменения не закоммичены и будут потеряны.',
     [
-      {text: 'Остаться', style: 'cancel'},
-      {text: 'Выйти', style: 'destructive', onPress: onConfirm},
+      { text: 'Остаться', style: 'cancel' },
+      { text: 'Выйти', style: 'destructive', onPress: onConfirm },
     ],
   );
 }
@@ -27,20 +27,26 @@ export function confirmDiscard(onConfirm: () => void): void {
  * and the navigator's listener, which is registered once and reads the stack
  * from a ref, does not jump the queue on every navigation.
  */
-export function useUnsavedChangesGuard(dirty: boolean, leave: () => void): void {
-  const latest = useRef({dirty, leave});
+export function useUnsavedChangesGuard(
+  dirty: boolean,
+  leave: () => void,
+): void {
+  const latest = useRef({ dirty, leave });
   useEffect(() => {
-    latest.current = {dirty, leave};
+    latest.current = { dirty, leave };
   }, [dirty, leave]);
 
   useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!latest.current.dirty) {
-        return false;
-      }
-      confirmDiscard(() => latest.current.leave());
-      return true;
-    });
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (!latest.current.dirty) {
+          return false;
+        }
+        confirmDiscard(() => latest.current.leave());
+        return true;
+      },
+    );
     return () => subscription.remove();
   }, []);
 }

@@ -6,14 +6,19 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {GitHubClient, GitHubError} from '../github/client';
-import type {GitHubUser} from '../github/types';
-import {clearToken, loadToken, saveToken} from '../storage/tokenStore';
+import { GitHubClient, GitHubError } from '../github/client';
+import type { GitHubUser } from '../github/types';
+import { clearToken, loadToken, saveToken } from '../storage/tokenStore';
 
 type AuthState =
-  | {status: 'loading'}
-  | {status: 'signedOut'}
-  | {status: 'signedIn'; token: string; user: GitHubUser | null; client: GitHubClient};
+  | { status: 'loading' }
+  | { status: 'signedOut' }
+  | {
+      status: 'signedIn';
+      token: string;
+      user: GitHubUser | null;
+      client: GitHubClient;
+    };
 
 type AuthContextValue = {
   status: AuthState['status'];
@@ -33,8 +38,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  * not a failure to authenticate, so the session survives being offline; only a
  * rejected token signs the user out.
  */
-export function AuthProvider({children}: {children: React.ReactNode}) {
-  const [state, setState] = useState<AuthState>({status: 'loading'});
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState>({ status: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
@@ -45,14 +50,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         return;
       }
       if (stored === null) {
-        setState({status: 'signedOut'});
+        setState({ status: 'signedOut' });
         return;
       }
       const client = new GitHubClient(stored);
       try {
         const user = await client.getUser();
         if (!cancelled) {
-          setState({status: 'signedIn', token: stored, user, client});
+          setState({ status: 'signedIn', token: stored, user, client });
         }
       } catch (error) {
         if (cancelled) {
@@ -61,11 +66,11 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         if (error instanceof GitHubError && error.kind === 'auth') {
           await clearToken();
           if (!cancelled) {
-            setState({status: 'signedOut'});
+            setState({ status: 'signedOut' });
           }
           return;
         }
-        setState({status: 'signedIn', token: stored, user: null, client});
+        setState({ status: 'signedIn', token: stored, user: null, client });
       }
     };
 
@@ -73,7 +78,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       // Reading the keystore failed, so there is no session to restore. The
       // only recovery is to ask for the token again.
       if (!cancelled) {
-        setState({status: 'signedOut'});
+        setState({ status: 'signedOut' });
       }
     });
 
@@ -88,12 +93,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     // Validating before persisting keeps a rejected token out of the keystore.
     const user = await client.getUser();
     await saveToken(trimmed);
-    setState({status: 'signedIn', token: trimmed, user, client});
+    setState({ status: 'signedIn', token: trimmed, user, client });
   }, []);
 
   const signOut = useCallback(async () => {
     await clearToken();
-    setState({status: 'signedOut'});
+    setState({ status: 'signedOut' });
   }, []);
 
   // The state is a discriminated union internally, but screens get a flat
@@ -124,7 +129,7 @@ export function useAuth(): AuthContextValue {
 
 /** The client for the current session; only valid on signed-in screens. */
 export function useGitHub(): GitHubClient {
-  const {client} = useAuth();
+  const { client } = useAuth();
   if (client === null) {
     throw new Error('useGitHub() requires a signed-in session');
   }

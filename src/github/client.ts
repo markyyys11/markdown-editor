@@ -1,5 +1,5 @@
-import {base64ToUtf8, utf8ToBase64} from './base64';
-import {encodeRepoPath} from './paths';
+import { base64ToUtf8, utf8ToBase64 } from './base64';
+import { encodeRepoPath } from './paths';
 import type {
   DirEntry,
   GitHubUser,
@@ -63,7 +63,7 @@ type RequestOptions = {
   body?: string;
 };
 
-type ApiUser = {login: string; name: string | null};
+type ApiUser = { login: string; name: string | null };
 
 type ApiRepo = {
   id: number;
@@ -73,10 +73,10 @@ type ApiRepo = {
   description: string | null;
   default_branch: string;
   updated_at: string;
-  owner: {login: string};
+  owner: { login: string };
 };
 
-type ApiBranch = {name: string};
+type ApiBranch = { name: string };
 
 type ApiContentEntry = {
   name: string;
@@ -94,7 +94,7 @@ type ApiFile = {
   content?: string;
 };
 
-type ApiWriteResult = {commit?: {sha?: string}};
+type ApiWriteResult = { commit?: { sha?: string } };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -103,7 +103,7 @@ const repoUrl = (owner: string, repo: string): string =>
   `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
 
 function classify(response: FetchResponse): GitHubErrorKind {
-  const {status} = response;
+  const { status } = response;
   if (status === 401) {
     return 'auth';
   }
@@ -200,7 +200,7 @@ export class GitHubClient {
   /** Validates a token: this is the first call the app ever makes. */
   async getUser(): Promise<GitHubUser> {
     const user = await this.request<ApiUser>('/user');
-    return {login: user.login, name: user.name ?? null};
+    return { login: user.login, name: user.name ?? null };
   }
 
   async listRepos(page = 1): Promise<RepoSummary[]> {
@@ -226,7 +226,9 @@ export class GitHubClient {
   ): Promise<DirEntry[]> {
     const suffix = path.length > 0 ? `/${encodeRepoPath(path)}` : '';
     const entries = await this.request<ApiContentEntry[] | ApiContentEntry>(
-      `${repoUrl(owner, repo)}/contents${suffix}?ref=${encodeURIComponent(ref)}`,
+      `${repoUrl(owner, repo)}/contents${suffix}?ref=${encodeURIComponent(
+        ref,
+      )}`,
     );
     if (!Array.isArray(entries)) {
       throw new GitHubError(
@@ -252,7 +254,9 @@ export class GitHubClient {
     ref: string,
   ): Promise<RemoteFile> {
     const file = await this.request<ApiFile>(
-      `${repoUrl(owner, repo)}/contents/${encodeRepoPath(path)}?ref=${encodeURIComponent(ref)}`,
+      `${repoUrl(owner, repo)}/contents/${encodeRepoPath(
+        path,
+      )}?ref=${encodeURIComponent(ref)}`,
     );
     if (file.encoding !== 'base64' || typeof file.content !== 'string') {
       throw new GitHubError(
@@ -262,7 +266,7 @@ export class GitHubClient {
         'Файл слишком велик: GitHub отдаёт содержимое только до 1 МБ.',
       );
     }
-    return {path: file.path, sha: file.sha, text: base64ToUtf8(file.content)};
+    return { path: file.path, sha: file.sha, text: base64ToUtf8(file.content) };
   }
 
   /**
@@ -282,8 +286,10 @@ export class GitHubClient {
       body.sha = input.sha;
     }
     const result = await this.request<ApiWriteResult>(
-      `${repoUrl(input.owner, input.repo)}/contents/${encodeRepoPath(input.path)}`,
-      {method: 'PUT', body: JSON.stringify(body)},
+      `${repoUrl(input.owner, input.repo)}/contents/${encodeRepoPath(
+        input.path,
+      )}`,
+      { method: 'PUT', body: JSON.stringify(body) },
     );
     return result.commit?.sha ?? '';
   }

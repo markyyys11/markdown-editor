@@ -1,17 +1,14 @@
-import React, {useState} from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Button} from '../components/Button';
-import {GitHubError} from '../github/client';
-import {useAuth} from '../state/AuthContext';
-import {fontSize, monoFontStack, palette, radius, spacing} from '../theme/theme';
-import {openExternalUrl} from '../util/urls';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button } from '../components/Button';
+import { GitHubError } from '../github/client';
+import { useAuth } from '../state/AuthContext';
+import { fontSize, monoFontStack, radius, spacing } from '../theme/theme';
+import { useTheme } from '../themes/ThemeProvider';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
+import { openExternalUrl } from '../util/urls';
 
 const TOKEN_SETTINGS_URL = 'https://github.com/settings/tokens';
 
@@ -20,8 +17,10 @@ const TOKEN_SETTINGS_URL = 'https://github.com/settings/tokens';
  * validates one before it is stored.
  */
 export function TokenScreen() {
-  const {signIn} = useAuth();
+  const { signIn } = useAuth();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [token, setToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,9 +49,13 @@ export function TokenScreen() {
       style={styles.root}
       contentContainerStyle={[
         styles.content,
-        {paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl},
+        {
+          paddingTop: insets.top + spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl,
+        },
       ]}
-      keyboardShouldPersistTaps="handled">
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>Markdown Editor</Text>
       <Text style={styles.lead}>
         Правка Markdown-документов прямо в репозиториях GitHub: исходник с
@@ -64,12 +67,12 @@ export function TokenScreen() {
         value={token}
         onChangeText={setToken}
         placeholder="ghp_…"
-        placeholderTextColor={palette.fgSubtle}
+        placeholderTextColor={theme.ui.fgSubtle}
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}
         spellCheck={false}
-        selectionColor={palette.accent}
+        selectionColor={theme.ui.accent}
         returnKeyType="go"
         onSubmitEditing={submit}
         style={styles.input}
@@ -115,58 +118,63 @@ export function TokenScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: palette.canvasDefault},
-  content: {paddingHorizontal: spacing.lg, gap: spacing.sm},
-  title: {
-    color: palette.fgDefault,
-    fontSize: fontSize.hero,
-    fontWeight: '700',
-  },
-  lead: {
-    color: palette.fgMuted,
-    fontSize: fontSize.body,
-    lineHeight: 22,
-    marginBottom: spacing.md,
-  },
-  label: {
-    color: palette.fgMuted,
-    fontSize: fontSize.caption,
-    marginTop: spacing.sm,
-  },
-  input: {
-    minHeight: 46,
-    paddingHorizontal: spacing.md,
-    color: palette.fgDefault,
-    backgroundColor: palette.canvasSubtle,
-    borderWidth: 1,
-    borderColor: palette.borderDefault,
-    borderRadius: radius.sm,
-    fontSize: fontSize.body,
-  },
-  error: {color: palette.red, fontSize: fontSize.label, lineHeight: 19},
-  submit: {marginTop: spacing.sm},
-  help: {
-    marginTop: spacing.xl,
-    padding: spacing.lg,
-    backgroundColor: palette.canvasSubtle,
-    borderWidth: 1,
-    borderColor: palette.borderDefault,
-    borderRadius: radius.md,
-    gap: spacing.sm,
-  },
-  helpTitle: {
-    color: palette.fgDefault,
-    fontSize: fontSize.body,
-    fontWeight: '600',
-  },
-  helpText: {color: palette.fgMuted, fontSize: fontSize.label, lineHeight: 20},
-  code: {fontFamily: monoFontStack, color: palette.lightBlue},
-  helpButton: {marginTop: spacing.sm},
-  footnote: {
-    marginTop: spacing.lg,
-    color: palette.fgSubtle,
-    fontSize: fontSize.caption,
-    lineHeight: 18,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.ui.canvasDefault },
+    content: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+    title: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.hero,
+      fontWeight: '700',
+    },
+    lead: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.body,
+      lineHeight: 22,
+      marginBottom: spacing.md,
+    },
+    label: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.caption,
+      marginTop: spacing.sm,
+    },
+    input: {
+      minHeight: 46,
+      paddingHorizontal: spacing.md,
+      color: theme.ui.fgDefault,
+      backgroundColor: theme.ui.canvasSubtle,
+      borderWidth: 1,
+      borderColor: theme.ui.borderDefault,
+      borderRadius: radius.sm,
+      fontSize: fontSize.body,
+    },
+    error: { color: theme.ui.danger, fontSize: fontSize.label, lineHeight: 19 },
+    submit: { marginTop: spacing.sm },
+    help: {
+      marginTop: spacing.xl,
+      padding: spacing.lg,
+      backgroundColor: theme.ui.canvasSubtle,
+      borderWidth: 1,
+      borderColor: theme.ui.borderDefault,
+      borderRadius: radius.md,
+      gap: spacing.sm,
+    },
+    helpTitle: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.body,
+      fontWeight: '600',
+    },
+    helpText: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.label,
+      lineHeight: 20,
+    },
+    code: { fontFamily: monoFontStack, color: theme.markup.inlineCode },
+    helpButton: { marginTop: spacing.sm },
+    footnote: {
+      marginTop: spacing.lg,
+      color: theme.ui.fgSubtle,
+      fontSize: fontSize.caption,
+      lineHeight: 18,
+    },
+  });

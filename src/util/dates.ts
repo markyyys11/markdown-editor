@@ -1,4 +1,5 @@
-const pad = (value: number): string => (value < 10 ? `0${value}` : String(value));
+const pad = (value: number): string =>
+  value < 10 ? `0${value}` : String(value);
 
 /**
  * Formats an ISO timestamp as `дд.мм.гггг`.
@@ -11,5 +12,7 @@ export function formatDay(iso: string): string {
   if (Number.isNaN(date.getTime())) {
     return '';
   }
-  return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+  return `${pad(date.getDate())}.${pad(
+    date.getMonth() + 1,
+  )}.${date.getFullYear()}`;
 }

@@ -1,4 +1,4 @@
-import {base64ToUtf8, utf8ToBase64} from '../src/github/base64';
+import { base64ToUtf8, utf8ToBase64 } from '../src/github/base64';
 
 /**
  * `Buffer` is the oracle here: Node encodes UTF-8 correctly by definition, so
@@ -10,7 +10,7 @@ import {base64ToUtf8, utf8ToBase64} from '../src/github/base64';
  * would silently accept Node-only APIs in `src/`.
  */
 declare const Buffer: {
-  from(input: string, encoding: string): {toString(encoding: string): string};
+  from(input: string, encoding: string): { toString(encoding: string): string };
 };
 
 const expected = (text: string): string =>

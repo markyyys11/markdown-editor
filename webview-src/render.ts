@@ -20,7 +20,8 @@ const markdown = new MarkdownIt({
       return '';
     }
     try {
-      return hljs.highlight(code, {language: lang, ignoreIllegals: true}).value;
+      return hljs.highlight(code, { language: lang, ignoreIllegals: true })
+        .value;
     } catch {
       return '';
     }
@@ -29,7 +30,7 @@ const markdown = new MarkdownIt({
   // GitHub renders when you view a Markdown file in a repository. The name of
   // the option is inverse to its meaning: `enabled: true` would make them
   // interactive, as they are in issues and pull requests.
-}).use(taskLists, {enabled: false});
+}).use(taskLists, { enabled: false });
 
 /** Renders Markdown source to HTML. The result is *not* sanitised yet. */
 export function renderMarkdownHtml(source: string): string {

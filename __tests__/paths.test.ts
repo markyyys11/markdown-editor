@@ -59,13 +59,26 @@ describe('baseName', () => {
 
 describe('isMarkdownPath', () => {
   it('accepts the Markdown extensions, case-insensitively', () => {
-    for (const path of ['a.md', 'a.MD', 'docs/b.markdown', 'c.mkd', 'd.mkdn', 'e.mdown']) {
+    for (const path of [
+      'a.md',
+      'a.MD',
+      'docs/b.markdown',
+      'c.mkd',
+      'd.mkdn',
+      'e.mdown',
+    ]) {
       expect(isMarkdownPath(path)).toBe(true);
     }
   });
 
   it('rejects everything else, including lookalikes', () => {
-    for (const path of ['a.yaml', 'a.json', 'md', 'd.md.bak', 'scripts/build.sh']) {
+    for (const path of [
+      'a.yaml',
+      'a.json',
+      'md',
+      'd.md.bak',
+      'scripts/build.sh',
+    ]) {
       expect(isMarkdownPath(path)).toBe(false);
     }
   });

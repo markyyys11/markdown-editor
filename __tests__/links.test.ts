@@ -1,4 +1,4 @@
-import {normalizeRepoPath, resolveLink} from '../src/github/links';
+import { normalizeRepoPath, resolveLink } from '../src/github/links';
 
 const REPO = 'https://github.com/Altey/lab-docs';
 const BRANCH = 'main';
@@ -35,17 +35,21 @@ describe('resolveLink', () => {
   });
 
   it('passes absolute URLs through untouched', () => {
-    expect(resolveLink('https://example.com/a.md', 'docs/intro.md', REPO, BRANCH)).toEqual({
+    expect(
+      resolveLink('https://example.com/a.md', 'docs/intro.md', REPO, BRANCH),
+    ).toEqual({
       kind: 'external',
       url: 'https://example.com/a.md',
     });
   });
 
   it('treats mailto: as an external URL', () => {
-    expect(resolveLink('mailto:lab@example.com', 'a.md', REPO, BRANCH)).toEqual({
-      kind: 'external',
-      url: 'mailto:lab@example.com',
-    });
+    expect(resolveLink('mailto:lab@example.com', 'a.md', REPO, BRANCH)).toEqual(
+      {
+        kind: 'external',
+        url: 'mailto:lab@example.com',
+      },
+    );
   });
 
   it('opens a sibling Markdown document in the editor', () => {
@@ -70,7 +74,9 @@ describe('resolveLink', () => {
   });
 
   it('drops the fragment before deciding', () => {
-    expect(resolveLink('setup.md#install', 'docs/intro.md', REPO, BRANCH)).toEqual({
+    expect(
+      resolveLink('setup.md#install', 'docs/intro.md', REPO, BRANCH),
+    ).toEqual({
       kind: 'markdown',
       path: 'docs/setup.md',
     });
@@ -84,7 +90,12 @@ describe('resolveLink', () => {
   });
 
   it('encodes the branch and the path of a non-Markdown target', () => {
-    const resolved = resolveLink('общий анализ.pdf', 'docs/заказы.md', REPO, 'feature/итоги');
+    const resolved = resolveLink(
+      'общий анализ.pdf',
+      'docs/заказы.md',
+      REPO,
+      'feature/итоги',
+    );
     expect(resolved).toEqual({
       kind: 'external',
       url: `${REPO}/blob/feature%2F%D0%B8%D1%82%D0%BE%D0%B3%D0%B8/docs/%D0%BE%D0%B1%D1%89%D0%B8%D0%B9%20%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7.pdf`,
@@ -94,7 +105,7 @@ describe('resolveLink', () => {
   it('resolves percent-encoded Markdown links', () => {
     expect(
       resolveLink('%D0%BE%D0%B1%D1%89%D0%B8%D0%B9.md', '', REPO, BRANCH),
-    ).toEqual({kind: 'markdown', path: 'общий.md'});
+    ).toEqual({ kind: 'markdown', path: 'общий.md' });
   });
 
   it('ignores a link that is only a query string', () => {

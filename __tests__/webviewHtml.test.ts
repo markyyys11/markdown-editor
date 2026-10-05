@@ -1,4 +1,4 @@
-import {buildWebviewHtml} from '../src/webview/html';
+import { buildWebviewHtml } from '../src/webview/html';
 
 describe('buildWebviewHtml', () => {
   it('inlines the bundle into the script element', () => {
@@ -14,10 +14,19 @@ describe('buildWebviewHtml', () => {
     expect(html).toContain('id="boot"');
   });
 
-  it('paints the dark backdrop before the bundle runs', () => {
+  it('expresses its colours as custom properties, for a theme to replace', () => {
     const html = buildWebviewHtml('/*bundle*/');
     expect(html).toContain('color-scheme: dark');
-    expect(html).toContain('#0d1117');
+    expect(html).toContain('--md-fg');
+    expect(html).toContain('--md-muted');
+  });
+
+  it('keeps the page background transparent, so a light theme never flashes dark', () => {
+    // The page stays hidden until the theme arrives, and the React Native
+    // container behind it is already painted in that theme; a colour baked in
+    // here would show through as the wrong palette on every editor open.
+    const html = buildWebviewHtml('/*bundle*/');
+    expect(html).toContain('--md-bg: transparent');
   });
 
   it('escapes a closing script tag so the element is not terminated early', () => {

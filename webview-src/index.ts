@@ -11,7 +11,8 @@ import type {
   InsertRequest,
   WebviewMessage,
 } from '../shared/protocol';
-import {defaultKeymap, history, historyKeymap} from '@codemirror/commands';
+import type { AppTheme } from '../shared/theme';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import {
   markdown,
   markdownKeymap,
@@ -22,7 +23,7 @@ import {
   indentOnInput,
   syntaxHighlighting,
 } from '@codemirror/language';
-import {EditorState} from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import {
   EditorView,
   drawSelection,
@@ -34,9 +35,10 @@ import {
   lineNumbers,
   placeholder,
 } from '@codemirror/view';
-import {planInsert} from './insert';
-import {previewCss, renderMarkdown} from './preview';
-import {githubDarkHighlightStyle, githubDarkTheme} from './theme';
+import { planInsert } from './insert';
+import { previewCss } from './previewCss';
+import { renderMarkdown } from './preview';
+import { editorTheme, markupHighlightStyle } from './theme';
 
 /** How long typing settles before the document is pushed to React Native. */
 const CHANGE_DEBOUNCE_MS = 250;
@@ -50,16 +52,29 @@ if (!editorHost || !previewHost) {
 }
 
 const previewStyles = document.createElement('style');
-previewStyles.textContent = previewCss;
 document.head.appendChild(previewStyles);
 
 let pendingChange: number | null = null;
 let mode: DocumentMode = 'edit';
+/**
+ * Until the theme arrives the panes stay hidden.
+ *
+ * The host always sends the theme before anything else, and the shell's
+ * background is transparent so that what shows through is the React Native
+ * container — which is already painted in the active theme. Painting the editor
+ * first would flash the wrong palette whenever the theme is a light one.
+ */
+let themeReady = false;
+
+// Swapped at runtime instead of rebuilding the editor, which would cost the undo
+// history and the selection every time the theme changed.
+const themeCompartment = new Compartment();
+const highlightCompartment = new Compartment();
 
 function post(message: WebviewMessage): void {
   const bridge = (
     window as unknown as {
-      ReactNativeWebView?: {postMessage(data: string): void};
+      ReactNativeWebView?: { postMessage(data: string): void };
     }
   ).ReactNativeWebView;
   bridge?.postMessage(JSON.stringify(message));
@@ -71,7 +86,7 @@ function scheduleChange(content: string): void {
   }
   pendingChange = window.setTimeout(() => {
     pendingChange = null;
-    post({type: 'change', content});
+    post({ type: 'change', content });
   }, CHANGE_DEBOUNCE_MS);
 }
 
@@ -82,7 +97,7 @@ function flushChange(): void {
   }
   window.clearTimeout(pendingChange);
   pendingChange = null;
-  post({type: 'change', content: view.state.doc.toString()});
+  post({ type: 'change', content: view.state.doc.toString() });
 }
 
 const editorExtensions = [
@@ -98,9 +113,9 @@ const editorExtensions = [
   highlightActiveLine(),
   EditorView.lineWrapping,
   placeholder('Начните печатать Markdown…'),
-  markdown({base: markdownLanguage}),
-  syntaxHighlighting(githubDarkHighlightStyle),
-  githubDarkTheme,
+  markdown({ base: markdownLanguage }),
+  themeCompartment.of([]),
+  highlightCompartment.of([]),
   // Markdown is not prose: autocorrect and autocapitalisation would rewrite
   // syntax as the user types it.
   EditorView.contentAttributes.of({
@@ -120,11 +135,43 @@ const editorExtensions = [
 
 const view = new EditorView({
   parent: editorHost,
-  state: EditorState.create({doc: '', extensions: editorExtensions}),
+  state: EditorState.create({ doc: '', extensions: editorExtensions }),
 });
+
+function revealPanes(): void {
+  const showingPreview = mode === 'preview';
+  editorHost!.hidden = showingPreview;
+  previewHost!.hidden = !showingPreview;
+}
 
 function renderPreview(): void {
   previewHost!.innerHTML = renderMarkdown(view.state.doc.toString());
+}
+
+/**
+ * Applies a theme: the editor's chrome and syntax colours through the
+ * compartments, the preview through its own stylesheet, and the shell's
+ * remaining colours through custom properties.
+ */
+function setTheme(theme: AppTheme): void {
+  view.dispatch({
+    effects: [
+      themeCompartment.reconfigure(editorTheme(theme)),
+      highlightCompartment.reconfigure(
+        syntaxHighlighting(markupHighlightStyle(theme)),
+      ),
+    ],
+  });
+
+  previewStyles.textContent = previewCss(theme);
+
+  const root = document.documentElement;
+  root.style.colorScheme = theme.mode;
+  root.style.setProperty('--md-fg', theme.ui.fgDefault);
+  root.style.setProperty('--md-muted', theme.ui.fgMuted);
+
+  themeReady = true;
+  revealPanes();
 }
 
 function setMode(next: DocumentMode): void {
@@ -135,8 +182,9 @@ function setMode(next: DocumentMode): void {
     view.contentDOM.blur();
     renderPreview();
   }
-  editorHost!.hidden = showingPreview;
-  previewHost!.hidden = !showingPreview;
+  if (themeReady) {
+    revealPanes();
+  }
 }
 
 /**
@@ -148,7 +196,9 @@ function setDocument(content: string): void {
     window.clearTimeout(pendingChange);
     pendingChange = null;
   }
-  view.setState(EditorState.create({doc: content, extensions: editorExtensions}));
+  view.setState(
+    EditorState.create({ doc: content, extensions: editorExtensions }),
+  );
   if (mode === 'preview') {
     renderPreview();
   }
@@ -172,8 +222,8 @@ function insertMarkup(request: InsertRequest): void {
   });
   view.dispatch(
     plan.changes === undefined
-      ? {selection: plan.selection}
-      : {changes: plan.changes, selection: plan.selection},
+      ? { selection: plan.selection }
+      : { changes: plan.changes, selection: plan.selection },
   );
   // Tapping a key on the host strips focus from the page on some Android
   // builds; taking it back keeps the soft keyboard up and scrolls the caret
@@ -193,12 +243,12 @@ previewHost.addEventListener('click', event => {
   event.preventDefault();
   const href = anchor.getAttribute('href');
   if (href) {
-    post({type: 'openLink', href});
+    post({ type: 'openLink', href });
   }
 });
 
 const onRawMessage = (event: Event): void => {
-  const data = (event as {data?: unknown}).data;
+  const data = (event as { data?: unknown }).data;
   if (typeof data !== 'string') {
     return;
   }
@@ -206,7 +256,7 @@ const onRawMessage = (event: Event): void => {
   try {
     parsed = JSON.parse(data);
   } catch {
-    post({type: 'error', message: 'Хост прислал не-JSON сообщение'});
+    post({ type: 'error', message: 'Хост прислал не-JSON сообщение' });
     return;
   }
   if (typeof parsed !== 'object' || parsed === null) {
@@ -214,6 +264,9 @@ const onRawMessage = (event: Event): void => {
   }
   const message = parsed as HostMessage;
   switch (message.type) {
+    case 'setTheme':
+      setTheme(message.theme);
+      break;
     case 'setMode':
       setMode(message.mode);
       break;
@@ -234,6 +287,4 @@ const onRawMessage = (event: Event): void => {
 document.addEventListener('message', onRawMessage);
 
 bootHost?.remove();
-editorHost.hidden = false;
-previewHost.hidden = true;
-post({type: 'ready'});
+post({ type: 'ready' });

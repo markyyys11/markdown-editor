@@ -1,17 +1,27 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {FlatList, Modal, RefreshControl, StyleSheet, Text, View} from 'react-native';
-import {Banner} from '../components/Banner';
-import {CenteredMessage} from '../components/CenteredMessage';
-import {Chip} from '../components/Chip';
-import {ListRow} from '../components/ListRow';
-import {PromptDialog} from '../components/PromptDialog';
-import {ScreenHeader} from '../components/ScreenHeader';
-import {GitHubError} from '../github/client';
-import {baseName, isMarkdownPath, joinRepoPath} from '../github/paths';
-import type {DirEntry, RepoSummary} from '../github/types';
-import type {OpenedFile} from '../navigation/routes';
-import {useGitHub} from '../state/AuthContext';
-import {fontSize, palette, spacing} from '../theme/theme';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  FlatList,
+  Modal,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Banner } from '../components/Banner';
+import { CenteredMessage } from '../components/CenteredMessage';
+import { Chip } from '../components/Chip';
+import { ListRow } from '../components/ListRow';
+import { PromptDialog } from '../components/PromptDialog';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { GitHubError } from '../github/client';
+import { baseName, isMarkdownPath, joinRepoPath } from '../github/paths';
+import type { DirEntry, RepoSummary } from '../github/types';
+import type { OpenedFile } from '../navigation/routes';
+import { useGitHub } from '../state/AuthContext';
+import { fontSize, spacing } from '../theme/theme';
+import { useTheme } from '../themes/ThemeProvider';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
 
 type Props = {
   repo: RepoSummary;
@@ -37,6 +47,8 @@ export function BrowseScreen({
   onOpenFile,
 }: Props) {
   const client = useGitHub();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [branch, setBranch] = useState(repo.defaultBranch);
   const [entries, setEntries] = useState<DirEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +62,9 @@ export function BrowseScreen({
   const load = useCallback(async () => {
     setError(null);
     try {
-      setEntries(await client.listDirectory(repo.owner, repo.name, path, branch));
+      setEntries(
+        await client.listDirectory(repo.owner, repo.name, path, branch),
+      );
     } catch (failure) {
       setEntries(null);
       setError(
@@ -115,7 +129,7 @@ export function BrowseScreen({
       }
       setNewFileOpen(false);
       setNewFileError(null);
-      onOpenFile({path: joinRepoPath(path, fileName), isNew: true, branch});
+      onOpenFile({ path: joinRepoPath(path, fileName), isNew: true, branch });
     },
     [branch, onOpenFile, path, takenNames],
   );
@@ -138,7 +152,7 @@ export function BrowseScreen({
       <FlatList
         data={listed}
         keyExtractor={entry => `${entry.type}:${entry.path}`}
-        renderItem={({item}) => {
+        renderItem={({ item }) => {
           if (item.type === 'dir') {
             return (
               <ListRow
@@ -155,7 +169,7 @@ export function BrowseScreen({
               disabled={!markdown}
               onPress={
                 markdown
-                  ? () => onOpenFile({path: item.path, isNew: false, branch})
+                  ? () => onOpenFile({ path: item.path, isNew: false, branch })
                   : undefined
               }
             />
@@ -166,8 +180,8 @@ export function BrowseScreen({
           <RefreshControl
             refreshing={reloading}
             onRefresh={reload}
-            colors={[palette.accent]}
-            progressBackgroundColor={palette.canvasSubtle}
+            colors={[theme.ui.accent]}
+            progressBackgroundColor={theme.ui.canvasSubtle}
           />
         }
         ListEmptyComponent={
@@ -224,7 +238,8 @@ export function BrowseScreen({
         transparent
         animationType="fade"
         statusBarTranslucent
-        onRequestClose={() => setPickerOpen(false)}>
+        onRequestClose={() => setPickerOpen(false)}
+      >
         <View style={styles.backdrop}>
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>Ветка</Text>
@@ -234,7 +249,7 @@ export function BrowseScreen({
               <FlatList
                 data={branches}
                 keyExtractor={name => name}
-                renderItem={({item}) => (
+                renderItem={({ item }) => (
                   <ListRow
                     title={item}
                     trailing={item === branch ? 'выбрана' : undefined}
@@ -253,7 +268,9 @@ export function BrowseScreen({
       <PromptDialog
         visible={newFileOpen}
         title="Новый документ"
-        description={path.length === 0 ? repo.fullName : `${repo.fullName}/${path}`}
+        description={
+          path.length === 0 ? repo.fullName : `${repo.fullName}/${path}`
+        }
         label="Имя файла"
         initialValue=""
         submitLabel="Создать"
@@ -268,38 +285,39 @@ export function BrowseScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: palette.canvasDefault},
-  toolbar: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.borderMuted,
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(1, 4, 9, 0.78)',
-    paddingTop: '18%',
-    paddingHorizontal: spacing.lg,
-  },
-  sheet: {
-    flex: 1,
-    maxHeight: '70%',
-    backgroundColor: palette.canvasSubtle,
-    borderWidth: 1,
-    borderColor: palette.borderDefault,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  sheetTitle: {
-    color: palette.fgDefault,
-    fontSize: fontSize.title,
-    fontWeight: '600',
-    padding: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.borderDefault,
-  },
-  empty: {flexGrow: 1},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.ui.canvasDefault },
+    toolbar: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.ui.borderMuted,
+    },
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(1, 4, 9, 0.78)',
+      paddingTop: '18%',
+      paddingHorizontal: spacing.lg,
+    },
+    sheet: {
+      flex: 1,
+      maxHeight: '70%',
+      backgroundColor: theme.ui.canvasSubtle,
+      borderWidth: 1,
+      borderColor: theme.ui.borderDefault,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    sheetTitle: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.title,
+      fontWeight: '600',
+      padding: spacing.lg,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.ui.borderDefault,
+    },
+    empty: { flexGrow: 1 },
+  });

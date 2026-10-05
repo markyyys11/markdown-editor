@@ -1,6 +1,6 @@
-import {useEffect, useRef, useState} from 'react';
-import {Keyboard} from 'react-native';
-import type {LayoutChangeEvent} from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Keyboard } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 
 type KeyboardInset = {
   /** Padding the layout needs so that its bottom edge sits above the keyboard. */
@@ -59,7 +59,7 @@ export function useKeyboardInset(navBarHeight: number): KeyboardInset {
   }, [visible, navBarHeight]);
 
   const onLayout = (event: LayoutChangeEvent): void => {
-    const {height} = event.nativeEvent.layout;
+    const { height } = event.nativeEvent.layout;
     if (height > tallest.current) {
       // The tallest height seen is the layout without a keyboard, which is the
       // baseline the shrink is measured against.

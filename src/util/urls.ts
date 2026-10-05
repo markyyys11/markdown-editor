@@ -1,4 +1,4 @@
-import {Linking} from 'react-native';
+import { Linking } from 'react-native';
 
 /**
  * Hands a URL to the system.

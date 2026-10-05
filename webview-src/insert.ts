@@ -1,10 +1,10 @@
-import type {InsertRequest} from '../shared/protocol';
+import type { InsertRequest } from '../shared/protocol';
 
 /** A change to apply, in the coordinates CodeMirror expects for a transaction. */
 export type InsertPlan = {
   /** Omitted when the key only moves the caret and changes nothing. */
-  changes?: {from: number; to: number; insert: string};
-  selection: {anchor: number; head: number};
+  changes?: { from: number; to: number; insert: string };
+  selection: { anchor: number; head: number };
 };
 
 export type InsertInput = {
@@ -44,32 +44,32 @@ export function planInsert({
   next,
   request,
 }: InsertInput): InsertPlan {
-  const {text, closer} = request;
+  const { text, closer } = request;
 
   if (closer === null) {
     const caret = from + text.length;
     return {
-      changes: {from, to, insert: text},
-      selection: {anchor: caret, head: caret},
+      changes: { from, to, insert: text },
+      selection: { anchor: caret, head: caret },
     };
   }
 
   if (selected.length > 0) {
     const start = from + text.length;
     return {
-      changes: {from, to, insert: `${text}${selected}${closer}`},
-      selection: {anchor: start, head: to + text.length},
+      changes: { from, to, insert: `${text}${selected}${closer}` },
+      selection: { anchor: start, head: to + text.length },
     };
   }
 
   if (next === closer) {
     const caret = from + closer.length;
-    return {selection: {anchor: caret, head: caret}};
+    return { selection: { anchor: caret, head: caret } };
   }
 
   const caret = from + text.length;
   return {
-    changes: {from, to, insert: `${text}${closer}`},
-    selection: {anchor: caret, head: caret},
+    changes: { from, to, insert: `${text}${closer}` },
+    selection: { anchor: caret, head: caret },
   };
 }

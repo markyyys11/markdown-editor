@@ -130,7 +130,9 @@ function encodeBase64(bytes: number[]): string {
       BASE64_ALPHABET[((first & 0x03) << 4) | (second >= 0 ? second >> 4 : 0)];
     encoded +=
       second >= 0
-        ? BASE64_ALPHABET[((second & 0x0f) << 2) | (third >= 0 ? third >> 6 : 0)]
+        ? BASE64_ALPHABET[
+            ((second & 0x0f) << 2) | (third >= 0 ? third >> 6 : 0)
+          ]
         : '=';
     encoded += third >= 0 ? BASE64_ALPHABET[third & 0x3f] : '=';
   }

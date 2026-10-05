@@ -1,4 +1,4 @@
-import {renderMarkdownHtml} from '../render';
+import { renderMarkdownHtml } from '../render';
 
 /**
  * These assertions pin the promise made for preview mode: the same constructs
@@ -8,9 +8,11 @@ import {renderMarkdownHtml} from '../render';
 describe('renderMarkdownHtml', () => {
   it('renders GFM tables with header cells', () => {
     const html = renderMarkdownHtml(
-      ['| Показатель | Значение |', '| --- | ---: |', '| Гемоглобин | 140 |'].join(
-        '\n',
-      ),
+      [
+        '| Показатель | Значение |',
+        '| --- | ---: |',
+        '| Гемоглобин | 140 |',
+      ].join('\n'),
     );
     expect(html).toContain('<table>');
     expect(html).toContain('<th>Показатель</th>');
@@ -39,14 +41,18 @@ describe('renderMarkdownHtml', () => {
   });
 
   it('leaves unknown fenced languages escaped and unhighlighted', () => {
-    const html = renderMarkdownHtml('```nosuchlang\n<script>alert(1)</script>\n```');
+    const html = renderMarkdownHtml(
+      '```nosuchlang\n<script>alert(1)</script>\n```',
+    );
     expect(html).toContain('language-nosuchlang');
     expect(html).not.toContain('hljs-');
     expect(html).toContain('&lt;script&gt;');
   });
 
   it('keeps raw HTML so that <details> works like it does on GitHub', () => {
-    const html = renderMarkdownHtml('<details><summary>Ещё</summary>текст</details>');
+    const html = renderMarkdownHtml(
+      '<details><summary>Ещё</summary>текст</details>',
+    );
     expect(html).toContain('<details>');
     expect(html).toContain('<summary>Ещё</summary>');
   });

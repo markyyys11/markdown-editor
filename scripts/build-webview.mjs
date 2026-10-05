@@ -7,10 +7,10 @@
  * file means `npm start` works without running this script first; rerun it with
  * `npm run build:webview` after touching anything under webview-src/.
  */
-import {build} from 'esbuild';
-import {mkdir, writeFile} from 'node:fs/promises';
+import { build } from 'esbuild';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputPath = path.join(root, 'src', 'webview', 'bundle.generated.ts');
@@ -25,8 +25,10 @@ const result = await build({
   minify: true,
   legalComments: 'none',
   // Stylesheets are imported as raw text so the bundle can inject them itself,
-  // which keeps the WebView HTML shell free of build-time dependencies.
-  loader: {'.css': 'text'},
+  // and the editor font arrives as a data URL, so the editor font works offline
+  // with no asset plumbing. Both keep the WebView shell free of build-time
+  // dependencies.
+  loader: { '.css': 'text', '.ttf': 'dataurl' },
   logLevel: 'warning',
 });
 
@@ -56,7 +58,7 @@ const body = `export const WEBVIEW_BUNDLE = ${JSON.stringify(escaped)};
 export const WEBVIEW_BUNDLE_BYTES = ${byteLength};
 `;
 
-await mkdir(path.dirname(outputPath), {recursive: true});
+await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, header + body, 'utf8');
 
 console.log(

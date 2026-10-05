@@ -11,14 +11,14 @@ const ACCOUNT = 'github';
  * backup or from another app.
  */
 export async function saveToken(token: string): Promise<void> {
-  await Keychain.setGenericPassword(ACCOUNT, token, {service: SERVICE});
+  await Keychain.setGenericPassword(ACCOUNT, token, { service: SERVICE });
 }
 
 export async function loadToken(): Promise<string | null> {
-  const credentials = await Keychain.getGenericPassword({service: SERVICE});
+  const credentials = await Keychain.getGenericPassword({ service: SERVICE });
   return credentials === false ? null : credentials.password;
 }
 
 export async function clearToken(): Promise<void> {
-  await Keychain.resetGenericPassword({service: SERVICE});
+  await Keychain.resetGenericPassword({ service: SERVICE });
 }

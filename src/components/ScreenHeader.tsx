@@ -1,7 +1,9 @@
 import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {fontSize, monoFontStack, palette, spacing} from '../theme/theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fontSize, monoFontStack, spacing } from '../theme/theme';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
 
 export type HeaderAction = {
   label: string;
@@ -23,10 +25,12 @@ type Props = {
  * the app draws edge to edge — Android 15 and later enforce that for apps
  * targeting API 35+, whatever `edgeToEdgeEnabled` says.
  */
-export function ScreenHeader({title, subtitle, onBack, actions = []}: Props) {
+export function ScreenHeader({ title, subtitle, onBack, actions = [] }: Props) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(createStyles);
+
   return (
-    <View style={[styles.container, {paddingTop: insets.top + spacing.sm}]}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.row}>
         {onBack !== undefined ? (
           <Pressable
@@ -34,7 +38,8 @@ export function ScreenHeader({title, subtitle, onBack, actions = []}: Props) {
             accessibilityLabel="Назад"
             hitSlop={10}
             onPress={onBack}
-            style={styles.back}>
+            style={styles.back}
+          >
             <Text style={styles.backLabel}>‹ Назад</Text>
           </Pressable>
         ) : null}
@@ -53,17 +58,19 @@ export function ScreenHeader({title, subtitle, onBack, actions = []}: Props) {
             key={action.label}
             accessibilityRole="button"
             accessibilityLabel={action.label}
-            accessibilityState={{disabled: action.disabled === true}}
+            accessibilityState={{ disabled: action.disabled === true }}
             disabled={action.disabled === true}
             hitSlop={10}
             onPress={action.onPress}
-            style={styles.action}>
+            style={styles.action}
+          >
             <Text
               style={[
                 styles.actionLabel,
                 action.emphasis === true ? styles.actionEmphasis : null,
                 action.disabled === true ? styles.actionDisabled : null,
-              ]}>
+              ]}
+            >
               {action.label}
             </Text>
           </Pressable>
@@ -73,36 +80,41 @@ export function ScreenHeader({title, subtitle, onBack, actions = []}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: palette.canvasSubtle,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.borderDefault,
-    paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 40,
-  },
-  back: {paddingVertical: spacing.xs, paddingRight: spacing.xs},
-  backLabel: {color: palette.accent, fontSize: fontSize.body},
-  titles: {flex: 1},
-  title: {color: palette.fgDefault, fontSize: fontSize.title, fontWeight: '600'},
-  subtitle: {
-    color: palette.fgMuted,
-    fontSize: fontSize.caption,
-    fontFamily: monoFontStack,
-    marginTop: 2,
-  },
-  action: {paddingVertical: spacing.xs, paddingHorizontal: spacing.xs},
-  actionLabel: {
-    color: palette.fgDefault,
-    fontSize: fontSize.body,
-    fontWeight: '600',
-  },
-  actionEmphasis: {color: palette.accent},
-  actionDisabled: {color: palette.fgSubtle},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: theme.ui.canvasSubtle,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.ui.borderDefault,
+      paddingBottom: spacing.sm,
+      paddingHorizontal: spacing.lg,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 40,
+    },
+    back: { paddingVertical: spacing.xs, paddingRight: spacing.xs },
+    backLabel: { color: theme.ui.accent, fontSize: fontSize.body },
+    titles: { flex: 1 },
+    title: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.title,
+      fontWeight: '600',
+    },
+    subtitle: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.caption,
+      fontFamily: monoFontStack,
+      marginTop: 2,
+    },
+    action: { paddingVertical: spacing.xs, paddingHorizontal: spacing.xs },
+    actionLabel: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.body,
+      fontWeight: '600',
+    },
+    actionEmphasis: { color: theme.ui.accent },
+    actionDisabled: { color: theme.ui.fgSubtle },
+  });

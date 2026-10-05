@@ -1,15 +1,15 @@
-import {encodeRepoPath, isMarkdownPath, parentRepoPath} from './paths';
+import { encodeRepoPath, isMarkdownPath, parentRepoPath } from './paths';
 
 const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 const FRAGMENT_OR_QUERY = /[?#].*$/;
 
 export type ResolvedLink =
   /** A URL to hand to the system browser or another app. */
-  | {kind: 'external'; url: string}
+  | { kind: 'external'; url: string }
   /** A Markdown document in the same repository; open it in the editor. */
-  | {kind: 'markdown'; path: string}
+  | { kind: 'markdown'; path: string }
   /** An in-page anchor, or something with nothing to open. */
-  | {kind: 'ignored'};
+  | { kind: 'ignored' };
 
 /** Collapses `.` and `..`; a `..` at the root cannot escape the repository. */
 export function normalizeRepoPath(path: string): string {
@@ -42,15 +42,15 @@ export function resolveLink(
 ): ResolvedLink {
   const target = href.trim();
   if (target.length === 0 || target.startsWith('#')) {
-    return {kind: 'ignored'};
+    return { kind: 'ignored' };
   }
   if (HAS_SCHEME.test(target)) {
-    return {kind: 'external', url: target};
+    return { kind: 'external', url: target };
   }
 
   const withoutFragment = target.replace(FRAGMENT_OR_QUERY, '');
   if (withoutFragment.length === 0) {
-    return {kind: 'ignored'};
+    return { kind: 'ignored' };
   }
 
   let decoded = withoutFragment;
@@ -66,10 +66,12 @@ export function resolveLink(
   );
 
   if (isMarkdownPath(resolved)) {
-    return {kind: 'markdown', path: resolved};
+    return { kind: 'markdown', path: resolved };
   }
   return {
     kind: 'external',
-    url: `${repoWebUrl}/blob/${encodeURIComponent(branch)}/${encodeRepoPath(resolved)}`,
+    url: `${repoWebUrl}/blob/${encodeURIComponent(branch)}/${encodeRepoPath(
+      resolved,
+    )}`,
   };
 }

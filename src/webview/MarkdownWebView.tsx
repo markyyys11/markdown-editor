@@ -6,21 +6,21 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import {StyleSheet} from 'react-native';
-import {WebView as UntypedWebView} from 'react-native-webview';
-import type {WebViewMessageEvent, WebViewProps} from 'react-native-webview';
-import type {
-  DocumentMode,
-  HostMessage,
-  InsertRequest,
+import { StyleSheet } from 'react-native';
+import { WebView as UntypedWebView } from 'react-native-webview';
+import type { WebViewMessageEvent, WebViewProps } from 'react-native-webview';
+import type { AppTheme } from '../../shared/theme';
+import {
+  parseWebviewMessage,
+  type DocumentMode,
+  type HostMessage,
+  type InsertRequest,
 } from '../../shared/protocol';
-import {parseWebviewMessage} from '../../shared/protocol';
-import {palette} from '../theme/theme';
-import {WEBVIEW_BUNDLE} from './bundle.generated';
-import {buildWebviewHtml} from './html';
+import { WEBVIEW_BUNDLE } from './bundle.generated';
+import { buildWebviewHtml } from './html';
 
 /** The imperative surface of the WebView that this component actually uses. */
-type WebViewHandle = {postMessage(message: string): void};
+type WebViewHandle = { postMessage(message: string): void };
 
 /**
  * react-native-webview 14.0.1 declares
@@ -31,7 +31,7 @@ type WebViewHandle = {postMessage(message: string): void};
  * narrows `ref` to the one method used here.
  */
 const WebView = UntypedWebView as unknown as React.ComponentType<
-  WebViewProps & {ref?: React.Ref<WebViewHandle>}
+  WebViewProps & { ref?: React.Ref<WebViewHandle> }
 >;
 
 type Props = {
@@ -47,6 +47,8 @@ type Props = {
    */
   documentKey: number;
   mode: DocumentMode;
+  /** The active theme. Sent before anything else, and again if it changes. */
+  theme: AppTheme;
   onChangeText(content: string): void;
   onOpenLink(href: string): void;
   onError(message: string): void;
@@ -83,12 +85,21 @@ export type MarkdownWebViewHandle = {
  * announced `ready`.
  */
 function MarkdownWebViewImpl(
-  {document, documentKey, mode, onChangeText, onOpenLink, onError}: Props,
+  {
+    document,
+    documentKey,
+    mode,
+    theme,
+    onChangeText,
+    onOpenLink,
+    onError,
+  }: Props,
   ref: React.ForwardedRef<MarkdownWebViewHandle>,
 ) {
   const webView = useRef<WebViewHandle | null>(null);
   const ready = useRef(false);
   const modeRef = useRef(mode);
+  const themeRef = useRef(theme);
   /**
    * The text the page should be showing: the loaded document, and then every
    * edit the page itself reports.
@@ -102,12 +113,15 @@ function MarkdownWebViewImpl(
 
   // Callbacks live in a ref so the message handler can stay referentially
   // stable, which keeps the WebView from re-rendering on every keystroke.
-  const handlers = useRef<Handlers>({onChangeText, onOpenLink, onError});
+  const handlers = useRef<Handlers>({ onChangeText, onOpenLink, onError });
   useEffect(() => {
-    handlers.current = {onChangeText, onOpenLink, onError};
+    handlers.current = { onChangeText, onOpenLink, onError };
   }, [onChangeText, onOpenLink, onError]);
 
-  const source = useMemo(() => ({html: buildWebviewHtml(WEBVIEW_BUNDLE)}), []);
+  const source = useMemo(
+    () => ({ html: buildWebviewHtml(WEBVIEW_BUNDLE) }),
+    [],
+  );
 
   const push = useCallback((message: HostMessage) => {
     webView.current?.postMessage(JSON.stringify(message));
@@ -117,7 +131,7 @@ function MarkdownWebViewImpl(
     ref,
     () => ({
       insert: request =>
-        push({type: 'insert', text: request.text, closer: request.closer}),
+        push({ type: 'insert', text: request.text, closer: request.closer }),
     }),
     [push],
   );
@@ -126,13 +140,23 @@ function MarkdownWebViewImpl(
     (content: string) => {
       currentText.current = content;
       if (ready.current) {
-        push({type: 'setDocument', content});
+        push({ type: 'setDocument', content });
       }
       // While the page is booting this is enough: the `ready` handler sends
       // whatever is current by then, and only the newest text matters.
     },
     [push],
   );
+
+  useEffect(() => {
+    themeRef.current = theme;
+    if (ready.current) {
+      push({ type: 'setTheme', theme });
+    }
+    // While the page is booting this is enough: the `ready` handler sends the
+    // theme before anything else, because the page keeps its panes hidden until
+    // it arrives.
+  }, [theme, push]);
 
   useEffect(() => {
     sendDocument(document);
@@ -144,7 +168,7 @@ function MarkdownWebViewImpl(
       // Still booting; the `ready` handler sends whichever mode is current then.
       return;
     }
-    push({type: 'setMode', mode});
+    push({ type: 'setMode', mode });
   }, [mode, push]);
 
   const handleMessage = useCallback(
@@ -162,10 +186,11 @@ function MarkdownWebViewImpl(
       switch (message.type) {
         case 'ready': {
           ready.current = true;
-          // The bundle boots into edit mode with an empty document, so state
-          // what this screen wants and hand over the text the page should show.
-          push({type: 'setMode', mode: modeRef.current});
-          push({type: 'setDocument', content: currentText.current});
+          // Order matters: the page stays hidden until the theme arrives, so the
+          // editor never paints in the previous palette.
+          push({ type: 'setTheme', theme: themeRef.current });
+          push({ type: 'setMode', mode: modeRef.current });
+          push({ type: 'setDocument', content: currentText.current });
           break;
         }
         case 'change':
@@ -192,8 +217,16 @@ function MarkdownWebViewImpl(
       originWhitelist={['*']}
       onMessage={handleMessage}
       onError={event => handlers.current.onError(event.nativeEvent.description)}
-      style={styles.webView}
-      containerStyle={styles.container}
+      style={[
+        styles.webView,
+        // Painted before the document is ready, so the editor never flashes a
+        // colour that belongs to no theme.
+        { backgroundColor: theme.ui.canvasDefault },
+      ]}
+      containerStyle={[
+        styles.container,
+        { backgroundColor: theme.ui.canvasDefault },
+      ]}
       overScrollMode="never"
       javaScriptEnabled
       // The document needs neither web storage nor filesystem access.
@@ -207,15 +240,8 @@ function MarkdownWebViewImpl(
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: palette.canvasDefault,
-  },
-  webView: {
-    flex: 1,
-    // Painted before the document is ready, so the editor does not flash white.
-    backgroundColor: palette.canvasDefault,
-  },
+  container: { flex: 1 },
+  webView: { flex: 1 },
 });
 
 export const MarkdownWebView = forwardRef(MarkdownWebViewImpl);

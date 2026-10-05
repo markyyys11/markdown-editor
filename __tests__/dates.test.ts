@@ -1,4 +1,4 @@
-import {formatDay} from '../src/util/dates';
+import { formatDay } from '../src/util/dates';
 
 describe('formatDay', () => {
   it('formats a local timestamp as дд.мм.гггг', () => {

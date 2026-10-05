@@ -6,6 +6,7 @@
  * can import it: the host uses the types plus `parseWebviewMessage`, while the
  * WebView bundle imports the types only and therefore pulls in no extra code.
  */
+import type { AppTheme } from './theme';
 
 /** Editing shows the Markdown source; preview renders it like GitHub does. */
 export type DocumentMode = 'edit' | 'preview';
@@ -24,16 +25,17 @@ export type InsertRequest = {
 
 /** Messages sent from React Native into the WebView. */
 export type HostMessage =
-  | {type: 'setMode'; mode: DocumentMode}
-  | {type: 'setDocument'; content: string}
-  | {type: 'insert'; text: string; closer: string | null};
+  | { type: 'setMode'; mode: DocumentMode }
+  | { type: 'setDocument'; content: string }
+  | { type: 'setTheme'; theme: AppTheme }
+  | { type: 'insert'; text: string; closer: string | null };
 
 /** Messages sent from the WebView back to React Native. */
 export type WebviewMessage =
-  | {type: 'ready'}
-  | {type: 'change'; content: string}
-  | {type: 'openLink'; href: string}
-  | {type: 'error'; message: string};
+  | { type: 'ready' }
+  | { type: 'change'; content: string }
+  | { type: 'openLink'; href: string }
+  | { type: 'error'; message: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -46,24 +48,24 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | null {
   if (!isRecord(raw)) {
     return null;
   }
-  const {type} = raw;
+  const { type } = raw;
   if (typeof type !== 'string') {
     return null;
   }
   switch (type) {
     case 'ready':
-      return {type: 'ready'};
+      return { type: 'ready' };
     case 'change':
       return typeof raw.content === 'string'
-        ? {type: 'change', content: raw.content}
+        ? { type: 'change', content: raw.content }
         : null;
     case 'openLink':
       return typeof raw.href === 'string'
-        ? {type: 'openLink', href: raw.href}
+        ? { type: 'openLink', href: raw.href }
         : null;
     case 'error':
       return typeof raw.message === 'string'
-        ? {type: 'error', message: raw.message}
+        ? { type: 'error', message: raw.message }
         : null;
     default:
       return null;

@@ -1,8 +1,5 @@
 import DOMPurify from 'dompurify';
-import githubMarkdownCss from 'github-markdown-css/github-markdown-dark.css';
-import highlightCss from 'highlight.js/styles/github-dark.css';
-import {palette} from '../shared/palette';
-import {renderMarkdownHtml} from './render';
+import { renderMarkdownHtml } from './render';
 
 /**
  * Raw HTML inside a document is attacker-controlled as soon as the user opens
@@ -14,7 +11,7 @@ import {renderMarkdownHtml} from './render';
  * lists render their disabled checkboxes.
  */
 const sanitizeOptions = {
-  USE_PROFILES: {html: true},
+  USE_PROFILES: { html: true },
   ADD_ATTR: ['target', 'rel'],
   FORBID_TAGS: [
     'style',
@@ -29,32 +26,7 @@ const sanitizeOptions = {
   ],
 };
 
-/** Renders Markdown source to sanitised HTML in the GitHub dark look. */
+/** Renders Markdown source to sanitised HTML. Colours come from `previewCss`. */
 export function renderMarkdown(source: string): string {
   return DOMPurify.sanitize(renderMarkdownHtml(source), sanitizeOptions);
 }
-
-/**
- * `github-markdown-dark.css` is literally the stylesheet GitHub serves for the
- * dark theme, so the preview matches github.com rather than approximating it.
- * The overrides below only adapt it to a phone-sized, scrollable pane.
- */
-export const previewCss = `
-${githubMarkdownCss}
-${highlightCss}
-
-:root { color-scheme: dark; }
-html, body { background-color: ${palette.canvasDefault}; }
-body { margin: 0; }
-
-.markdown-body {
-  background-color: transparent;
-  padding: 12px 16px 45vh;
-  font-size: 15px;
-}
-.markdown-body img { max-width: 100%; }
-.markdown-body table { display: block; width: max-content; max-width: 100%; overflow: auto; }
-.markdown-body pre { overflow: auto; }
-.markdown-body .hljs { background-color: ${palette.canvasSubtle}; }
-.markdown-body input[type='checkbox'] { margin: 0 0.4em 0 0; }
-`;

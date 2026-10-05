@@ -1,7 +1,10 @@
-import React, {useEffect, useState} from 'react';
-import {Modal, StyleSheet, Text, TextInput, View} from 'react-native';
-import {fontSize, palette, radius, spacing} from '../theme/theme';
-import {Button} from './Button';
+import React, { useEffect, useState } from 'react';
+import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import { fontSize, radius, spacing } from '../theme/theme';
+import { useTheme } from '../themes/ThemeProvider';
+import type { AppTheme } from '../themes/types';
+import { useThemedStyles } from '../themes/useThemedStyles';
+import { Button } from './Button';
 
 type Props = {
   visible: boolean;
@@ -37,6 +40,8 @@ export function PromptDialog({
   onCancel,
   onSubmit,
 }: Props) {
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
@@ -51,7 +56,8 @@ export function PromptDialog({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onCancel}>
+      onRequestClose={onCancel}
+    >
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
@@ -67,8 +73,8 @@ export function PromptDialog({
             autoCapitalize="none"
             autoCorrect={false}
             spellCheck={false}
-            selectionColor={palette.accent}
-            placeholderTextColor={palette.fgSubtle}
+            selectionColor={theme.ui.accent}
+            placeholderTextColor={theme.ui.fgSubtle}
             style={[styles.input, multiline ? styles.inputMultiline : null]}
           />
           {error !== null ? <Text style={styles.error}>{error}</Text> : null}
@@ -93,59 +99,62 @@ export function PromptDialog({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(1, 4, 9, 0.78)',
-    paddingHorizontal: spacing.lg,
-    paddingTop: '22%',
-  },
-  card: {
-    backgroundColor: palette.canvasSubtle,
-    borderWidth: 1,
-    borderColor: palette.borderDefault,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  title: {
-    color: palette.fgDefault,
-    fontSize: fontSize.title,
-    fontWeight: '600',
-  },
-  description: {
-    color: palette.fgMuted,
-    fontSize: fontSize.label,
-    lineHeight: 19,
-  },
-  label: {
-    color: palette.fgMuted,
-    fontSize: fontSize.caption,
-    marginTop: spacing.sm,
-  },
-  input: {
-    minHeight: 42,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: palette.fgDefault,
-    backgroundColor: palette.canvasDefault,
-    borderWidth: 1,
-    borderColor: palette.borderDefault,
-    borderRadius: radius.sm,
-    fontSize: fontSize.body,
-  },
-  inputMultiline: {
-    minHeight: 96,
-    textAlignVertical: 'top',
-  },
-  error: {
-    color: palette.red,
-    fontSize: fontSize.label,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  button: {flex: 1},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      // Fixed dark scrim: it has to separate the dialog from the document
+      // whatever the theme, including a light one.
+      backgroundColor: 'rgba(1, 4, 9, 0.78)',
+      paddingHorizontal: spacing.lg,
+      paddingTop: '22%',
+    },
+    card: {
+      backgroundColor: theme.ui.canvasSubtle,
+      borderWidth: 1,
+      borderColor: theme.ui.borderDefault,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    title: {
+      color: theme.ui.fgDefault,
+      fontSize: fontSize.title,
+      fontWeight: '600',
+    },
+    description: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.label,
+      lineHeight: 19,
+    },
+    label: {
+      color: theme.ui.fgMuted,
+      fontSize: fontSize.caption,
+      marginTop: spacing.sm,
+    },
+    input: {
+      minHeight: 42,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      color: theme.ui.fgDefault,
+      backgroundColor: theme.ui.canvasDefault,
+      borderWidth: 1,
+      borderColor: theme.ui.borderDefault,
+      borderRadius: radius.sm,
+      fontSize: fontSize.body,
+    },
+    inputMultiline: {
+      minHeight: 96,
+      textAlignVertical: 'top',
+    },
+    error: {
+      color: theme.ui.danger,
+      fontSize: fontSize.label,
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    button: { flex: 1 },
+  });
