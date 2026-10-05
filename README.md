@@ -1,97 +1,145 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Markdown Editor
 
-# Getting Started
+Редактор Markdown-документов из репозиториев GitHub для Android: правка исходника
+с подсветкой синтаксиса, просмотр «как на github.com» и коммит прямо с телефона.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Что умеет
 
-## Step 1: Start Metro
+- **Два режима.**
+  «Правка» показывает исходник Markdown целиком — все спецсимволы (`#`, `**`, `>`,
+  обратные кавычки, `-`, `|`) видны, а форматирование подсвечивается разными
+  цветами. Размер шрифта при этом не меняется: меняются только цвет, начертание и
+  подчёркивание. «Просмотр» рендерит документ так же, как GitHub: заголовки,
+  таблицы, списки задач, зачёркивание, цитаты, блоки кода с подсветкой.
+- **Работа с репозиториями.** Вход по личному токену, список репозиториев с
+  пагинацией, обход каталогов, переключение ветки, фильтр «только Markdown»,
+  создание нового `.md`-файла.
+- **Коммит.** Диалог с сообщением коммита; расхождение с GitHub («файл изменился»)
+  распознаётся отдельно и предлагает перезагрузить документ.
+- **Ссылки в превью** работают: относительные `.md` открываются в редакторе,
+  остальные уходят в браузер.
+- **Тёмная тема** в палитре GitHub Dark — одна палитра на редактор, превью и
+  интерфейс приложения.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Требования
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| Компонент | Версия |
+| --- | --- |
+| Node | ≥ 22.11 |
+| JDK | 17+ |
+| Android SDK | platform 36, build-tools 36.0.0 |
+| React Native | 0.84.1 |
 
-```sh
-# Using npm
-npm start
+## Запуск
 
-# OR using Yarn
-yarn start
+```shell
+npm install
+npm start          # Metro, в отдельном терминале
+npm run android    # сборка и установка на устройство или эмулятор
 ```
 
-## Step 2: Build and run your app
+## Токен GitHub
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Приложению нужен личный токен доступа (PAT):
 
-### Android
+- классическому токену достаточно области `repo`;
+- токену с тонкими правами — разрешение `Contents: Read and write`.
 
-```sh
-# Using npm
-npm run android
+Токен проверяется запросом `GET /user` до сохранения, поэтому отклонённый токен в
+хранилище не попадает, и лежит в Keystore Android через `react-native-keychain`.
 
-# OR using Yarn
-yarn android
+## Команды
+
+| Команда | Что делает |
+| --- | --- |
+| `npm start` | Metro |
+| `npm run android` | сборка и установка на Android |
+| `npm run build:webview` | пересобирает бандл редактора из `webview-src/` |
+| `npm test` | Jest |
+| `npm run typecheck` | `tsc` для приложения и отдельно для `webview-src` |
+| `npm run lint` | ESLint |
+
+## Устройство
+
+```
+shared/          типы протокола сообщений и палитра — общие для обоих миров
+webview-src/     CodeMirror 6 и рендер превью; собирается esbuild-ом
+scripts/         сборка бандла WebView в строковую константу
+src/
+  github/        клиент Contents API, base64, пути, разбор ссылок
+  storage/       хранение токена (Android — Keystore)
+  state/         сессия GitHub (AuthProvider)
+  navigation/    стек экранов и защита несохранённых правок
+  components/    элементы интерфейса
+  screens/       токен → репозитории → каталог → редактор
+  webview/       HTML-оболочка и хост WebView
+  theme/         токены оформления
 ```
 
-### iOS
+### Почему WebView
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+Редактор — это CodeMirror 6, тот же класс редактора, что лежит в основе VS Code.
+Собрать его напрямую в React Native нельзя, поэтому `webview-src/` собирается
+esbuild-ом в одну строку JavaScript (`src/webview/bundle.generated.ts`, файл
+сгенерирован и закоммичен), а хост подставляет её в HTML. Ручной шаг сборки не
+нужен: `npm start` работает сразу, а `npm run build:webview` требуется только
+после правок в `webview-src/`.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+Хост и страница общаются сообщениями (`shared/protocol.ts`): хост присылает
+`setMode` и `setDocument`, страница отвечает `ready`, `change`, `openLink` и
+`error`. Пока страница не прислала `ready`, сообщения копятся в очереди, а
+`setDocument` в ней вытесняет предыдущий: при открытии файла передавать документ
+дважды не имеет смысла.
 
-```sh
-bundle install
-```
+### Превью как на GitHub
 
-Then, and every time you update your native dependencies, run:
+`github-markdown-css` — это буквально тот CSS, которым GitHub отдаёт тёмную тему,
+поэтому превью совпадает с github.com, а не подражает ему. Разметку делает
+`markdown-it` (таблицы, зачёркивание, списки задач, автолинки), блоки кода —
+`highlight.js`, а сырой HTML из документа проходит через `DOMPurify`: пользователь
+открывает чужие репозитории, и без санитайза документ мог бы дотянуться до моста
+в React Native.
 
-```sh
-bundle exec pod install
-```
+### Почему Contents API, а не настоящий git
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+`isomorphic-git` требует fs-адаптера с `lstat`, `readlink`, `symlink` и `chmod`,
+которых в `react-native-fs` нет ни на Android, ни на Windows. Contents API даёт
+сценарий «открыл файл — изменил — закоммитил» одинаково и без шимов. Цена: только
+онлайн, нельзя мёржить ветки, и файлы больше 1 МБ недоступны (приложение сообщает
+об этом отдельным текстом).
 
-```sh
-# Using npm
-npm run ios
+## Проверено и не проверено
 
-# OR using Yarn
-yarn ios
-```
+**Проверено:** `tsc` для приложения и для `webview-src`, 78 тестов Jest (кодек
+base64 с кириллицей, пути, разбор ссылок, протокол, классификация ошибок GitHub,
+экранирование HTML-оболочки, рендеринг превью), ESLint без замечаний, сборка
+бандла через Metro. Сборка Metro подтверждает, что весь граф зависимостей
+резолвится и что бандл редактора действительно оказывается внутри приложения.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+**Не проверено:** сборка `gradlew` и запуск на устройстве — в системе не было JDK
+и Android SDK. Ничего из того, что видно только на устройстве (жестовая клавиатура,
+поведение моста WebView, размер шрифта), на момент написания не запускалось.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Известные ограничения и осознанные решения
 
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- **Размер.** Бандл редактора — ~880 КБ минифицированного JS; он лежит строкой в
+  бандле приложения (итого ~2 МБ) и разбирается WebView при каждом открытии файла.
+  Крупнейшие вклады: `highlight.js/lib/common` (162 КБ, 37 языков) и грамматики
+  HTML/CSS/JS (212 КБ), которые `@codemirror/lang-markdown` тянет ради подсветки
+  встроенного в Markdown HTML. Оба рычага уменьшения известны и измерены, но
+  намеренно не тронуты: они дают совпадение с VS Code, а для прототипа размер не
+  критичен.
+- **Типы `react-native-webview`.** В 14.0.1 компонент объявлен как
+  `class WebView<P = undefined> extends Component<WebViewProps & P>`: пересечение с
+  `undefined` даёт `never`, и типы отвергают все пропсы. В
+  `src/webview/MarkdownWebView.tsx` это обходится одним документированным
+  приведением типа; лечится обновлением библиотеки.
+- **Навигация.** Вместо `react-navigation` — свой стек и `BackHandler`. Так у
+  приложения на нативный модуль меньше, а несохранённые правки защищают и кнопка
+  «Назад» в шапке, и аппаратная кнопка.
+- **Переходы по ссылкам.** Ссылка открывает новый экран редактора поверх текущего,
+  поэтому возврат сохраняет несохранённые правки документа, из которого ушли.
+- **Токен на не-Android платформах.** `src/storage/tokenStore.ts` (он же
+  используется в тестах) держит токен только в памяти: писать учётные данные в
+  обычное хранилище было бы хуже, чем спросить их заново.
+- **Только Android.** Проект `ios/` удалён, Windows не поддерживается.
