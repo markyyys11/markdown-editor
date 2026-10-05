@@ -1,8 +1,19 @@
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react';
 import {StyleSheet} from 'react-native';
 import {WebView as UntypedWebView} from 'react-native-webview';
 import type {WebViewMessageEvent, WebViewProps} from 'react-native-webview';
-import type {DocumentMode, HostMessage} from '../../shared/protocol';
+import type {
+  DocumentMode,
+  HostMessage,
+  InsertRequest,
+} from '../../shared/protocol';
 import {parseWebviewMessage} from '../../shared/protocol';
 import {palette} from '../theme/theme';
 import {WEBVIEW_BUNDLE} from './bundle.generated';
@@ -44,6 +55,19 @@ type Props = {
 type Handlers = Pick<Props, 'onChangeText' | 'onOpenLink' | 'onError'>;
 
 /**
+ * Commands the host sends in response to a gesture.
+ *
+ * These are imperative on purpose, unlike the document: a command exists only
+ * because a key was tapped, so the WebView is mounted by definition when it is
+ * sent. The document could not assume that — assuming it once cost every file
+ * opening blank — which is why it stays a prop.
+ */
+export type MarkdownWebViewHandle = {
+  /** Inserts markup at the caret, applying the editor's pairing rules. */
+  insert(request: InsertRequest): void;
+};
+
+/**
  * Hosts the CodeMirror editor and the GitHub-style preview.
  *
  * The document is handed over as a prop rather than through an imperative
@@ -58,14 +82,10 @@ type Handlers = Pick<Props, 'onChangeText' | 'onOpenLink' | 'onError'>;
  * be mounted before the page inside the WebView has finished booting and
  * announced `ready`.
  */
-export function MarkdownWebView({
-  document,
-  documentKey,
-  mode,
-  onChangeText,
-  onOpenLink,
-  onError,
-}: Props) {
+function MarkdownWebViewImpl(
+  {document, documentKey, mode, onChangeText, onOpenLink, onError}: Props,
+  ref: React.ForwardedRef<MarkdownWebViewHandle>,
+) {
   const webView = useRef<WebViewHandle | null>(null);
   const ready = useRef(false);
   const modeRef = useRef(mode);
@@ -92,6 +112,15 @@ export function MarkdownWebView({
   const push = useCallback((message: HostMessage) => {
     webView.current?.postMessage(JSON.stringify(message));
   }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      insert: request =>
+        push({type: 'insert', text: request.text, closer: request.closer}),
+    }),
+    [push],
+  );
 
   const sendDocument = useCallback(
     (content: string) => {
@@ -188,3 +217,5 @@ const styles = StyleSheet.create({
     backgroundColor: palette.canvasDefault,
   },
 });
+
+export const MarkdownWebView = forwardRef(MarkdownWebViewImpl);

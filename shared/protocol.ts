@@ -10,10 +10,23 @@
 /** Editing shows the Markdown source; preview renders it like GitHub does. */
 export type DocumentMode = 'edit' | 'preview';
 
+/** A request to insert markup at the caret, sent when a keypad key is tapped. */
+export type InsertRequest = {
+  /** Text to insert, replacing the selection. */
+  text: string;
+  /**
+   * Closing text for a symbol that comes in pairs. When set, the pair is
+   * inserted together with the caret between the two — unless the closing text
+   * is already right after the caret, in which case the caret steps over it.
+   */
+  closer: string | null;
+};
+
 /** Messages sent from React Native into the WebView. */
 export type HostMessage =
   | {type: 'setMode'; mode: DocumentMode}
-  | {type: 'setDocument'; content: string};
+  | {type: 'setDocument'; content: string}
+  | {type: 'insert'; text: string; closer: string | null};
 
 /** Messages sent from the WebView back to React Native. */
 export type WebviewMessage =

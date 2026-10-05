@@ -5,7 +5,12 @@
  * preview. Exactly one is visible at a time, but both stay mounted so that
  * switching modes never costs undo history or a re-parse of the document.
  */
-import type {DocumentMode, HostMessage, WebviewMessage} from '../shared/protocol';
+import type {
+  DocumentMode,
+  HostMessage,
+  InsertRequest,
+  WebviewMessage,
+} from '../shared/protocol';
 import {defaultKeymap, history, historyKeymap} from '@codemirror/commands';
 import {
   markdown,
@@ -29,6 +34,7 @@ import {
   lineNumbers,
   placeholder,
 } from '@codemirror/view';
+import {planInsert} from './insert';
 import {previewCss, renderMarkdown} from './preview';
 import {githubDarkHighlightStyle, githubDarkTheme} from './theme';
 
@@ -148,6 +154,33 @@ function setDocument(content: string): void {
   }
 }
 
+/**
+ * Applies a keypad key at the caret. The rules live in `planInsert`; this only
+ * reads the facts it needs out of the editor and dispatches the result.
+ */
+function insertMarkup(request: InsertRequest): void {
+  const range = view.state.selection.main;
+  const plan = planInsert({
+    from: range.from,
+    to: range.to,
+    selected: view.state.sliceDoc(range.from, range.to),
+    next: view.state.sliceDoc(
+      range.from,
+      range.from + (request.closer?.length ?? 0),
+    ),
+    request,
+  });
+  view.dispatch(
+    plan.changes === undefined
+      ? {selection: plan.selection}
+      : {changes: plan.changes, selection: plan.selection},
+  );
+  // Tapping a key on the host strips focus from the page on some Android
+  // builds; taking it back keeps the soft keyboard up and scrolls the caret
+  // into view.
+  view.focus();
+}
+
 previewHost.addEventListener('click', event => {
   const target = event.target;
   if (!(target instanceof Element)) {
@@ -186,6 +219,9 @@ const onRawMessage = (event: Event): void => {
       break;
     case 'setDocument':
       setDocument(message.content);
+      break;
+    case 'insert':
+      insertMarkup(message);
       break;
     default:
       break;

@@ -2,6 +2,7 @@ import React from 'react';
 import TestRenderer, {act} from 'react-test-renderer';
 import {WebView} from 'react-native-webview';
 import {MarkdownWebView} from '../src/webview/MarkdownWebView';
+import type {MarkdownWebViewHandle} from '../src/webview/MarkdownWebView';
 
 /**
  * A class component, so React attaches the `ref` this component passes and the
@@ -35,9 +36,12 @@ function mount(props: {
     onOpenLink: jest.fn(),
     onError: jest.fn(),
   };
+  const handle = React.createRef<MarkdownWebViewHandle>();
   let tree: TestRenderer.ReactTestRenderer | null = null;
   act(() => {
-    tree = TestRenderer.create(<MarkdownWebView {...props} {...handlers} />);
+    tree = TestRenderer.create(
+      <MarkdownWebView ref={handle} {...props} {...handlers} />,
+    );
   });
   if (tree === null) {
     throw new Error('the tree was never created');
@@ -51,7 +55,14 @@ function mount(props: {
   };
   const posted = () =>
     page.postMessage.mock.calls.map(([raw]) => JSON.parse(String(raw)));
-  return {tree: tree as TestRenderer.ReactTestRenderer, page, fire, posted, handlers};
+  return {
+    tree: tree as TestRenderer.ReactTestRenderer,
+    page,
+    fire,
+    posted,
+    handlers,
+    handle,
+  };
 }
 
 describe('MarkdownWebView', () => {
@@ -175,6 +186,28 @@ describe('MarkdownWebView', () => {
     });
 
     expect(posted()).toEqual([{type: 'setMode', mode: 'preview'}]);
+  });
+
+  it('forwards a keypad tap to the page as an insert command', () => {
+    const {fire, page, posted, handle} = mount({
+      document: '',
+      documentKey: 0,
+      mode: 'edit',
+    });
+    fire({type: 'ready'});
+    page.postMessage.mockClear();
+
+    act(() => {
+      handle.current?.insert({text: '*', closer: '*'});
+    });
+    act(() => {
+      handle.current?.insert({text: '\t', closer: null});
+    });
+
+    expect(posted()).toEqual([
+      {type: 'insert', text: '*', closer: '*'},
+      {type: 'insert', text: '\t', closer: null},
+    ]);
   });
 
   it('reports edits and link taps to the host', () => {

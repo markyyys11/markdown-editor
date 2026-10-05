@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
-import type {DocumentMode} from '../../shared/protocol';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import type {DocumentMode, InsertRequest} from '../../shared/protocol';
 import {Banner} from '../components/Banner';
 import type {BannerKind} from '../components/Banner';
 import {Button} from '../components/Button';
@@ -8,10 +9,15 @@ import {CenteredMessage} from '../components/CenteredMessage';
 import {PromptDialog} from '../components/PromptDialog';
 import {ScreenHeader} from '../components/ScreenHeader';
 import {SegmentedControl} from '../components/SegmentedControl';
+import {SymbolBar} from '../components/SymbolBar';
+import {TabKey} from '../components/TabKey';
 import {GitHubError} from '../github/client';
 import {resolveLink} from '../github/links';
 import {baseName} from '../github/paths';
 import type {RepoSummary, WriteFileInput} from '../github/types';
+import {useKeyboardInset} from '../hooks/useKeyboardInset';
+import {TAB_TEXT} from '../markdown/symbols';
+import type {MarkdownSymbol} from '../markdown/symbols';
 import {
   confirmDiscard,
   useUnsavedChangesGuard,
@@ -20,6 +26,7 @@ import {useGitHub} from '../state/AuthContext';
 import {palette, spacing} from '../theme/theme';
 import {openExternalUrl} from '../util/urls';
 import {MarkdownWebView} from '../webview/MarkdownWebView';
+import type {MarkdownWebViewHandle} from '../webview/MarkdownWebView';
 
 const MODES: ReadonlyArray<{value: DocumentMode; label: string}> = [
   {value: 'edit', label: 'Правка'},
@@ -51,7 +58,10 @@ export function EditorScreen({
   onOpenMarkdown,
 }: Props) {
   const client = useGitHub();
+  const editor = useRef<MarkdownWebViewHandle | null>(null);
   const loadedOnce = useRef(false);
+  const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardInset(insets.bottom);
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     isNew ? 'ready' : 'loading',
@@ -134,6 +144,26 @@ export function EditorScreen({
       current !== null && current.kind === 'success' ? null : current,
     );
   }, []);
+
+  /**
+   * The keypad only exists while the editor is mounted, so this ref is set by
+   * the time a key can be tapped — the assumption the document could not make,
+   * which is why it is passed as a prop instead.
+   */
+  const insert = useCallback((request: InsertRequest) => {
+    editor.current?.insert(request);
+  }, []);
+
+  const insertSymbol = useCallback(
+    (symbol: MarkdownSymbol) => {
+      insert({text: symbol.symbol, closer: symbol.closer});
+    },
+    [insert],
+  );
+
+  const insertTab = useCallback(() => {
+    insert({text: TAB_TEXT, closer: null});
+  }, [insert]);
 
   const handleOpenLink = useCallback(
     (href: string) => {
@@ -228,7 +258,11 @@ export function EditorScreen({
   }, [load]);
 
   return (
-    <View style={styles.root}>
+    <View
+      // The padding is whatever the platform did not already take care of when
+      // the keyboard appeared; see useKeyboardInset.
+      style={[styles.root, {paddingBottom: keyboard.inset}]}
+      onLayout={keyboard.onLayout}>
       <ScreenHeader
         title={baseName(path)}
         subtitle={`${repo.fullName} · ${branch}`}
@@ -287,13 +321,29 @@ export function EditorScreen({
         />
       ) : null}
       {status === 'ready' ? (
-        <MarkdownWebView
-          document={documentToLoad.text}
-          documentKey={documentToLoad.key}
-          mode={mode}
-          onChangeText={handleChangeText}
-          onOpenLink={handleOpenLink}
-          onError={message => setNotice({kind: 'error', message})}
+        <View style={styles.editor}>
+          <MarkdownWebView
+            ref={editor}
+            document={documentToLoad.text}
+            documentKey={documentToLoad.key}
+            mode={mode}
+            onChangeText={handleChangeText}
+            onOpenLink={handleOpenLink}
+            onError={message => setNotice({kind: 'error', message})}
+          />
+          {/* Floating inside the editing area, so it sits just above the
+              symbol bar without taking a row of its own. */}
+          {mode === 'edit' ? <TabKey onPress={insertTab} /> : null}
+        </View>
+      ) : null}
+
+      {/* Preview has no caret to insert into, so the keypad is editing-only. */}
+      {status === 'ready' && mode === 'edit' ? (
+        <SymbolBar
+          onInsert={insertSymbol}
+          bottomInset={
+            keyboard.visible ? spacing.xs : Math.max(insets.bottom, spacing.sm)
+          }
         />
       ) : null}
 
@@ -321,6 +371,7 @@ export function EditorScreen({
 
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: palette.canvasDefault},
+  editor: {flex: 1},
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
