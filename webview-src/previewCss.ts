@@ -76,10 +76,17 @@ export const previewCss = (theme: AppTheme): string => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   font-size: 15px;
   line-height: 1.6;
-  padding: 12px 16px 45vh;
+  padding: 16px 20px 45vh;
   word-wrap: break-word;
 }
 .markdown-body > *:first-child { margin-top: 0; }
+/* A first-line indent on each paragraph, as Russian typography expects. Reset
+   inside blocks that already provide their own alignment or indentation. */
+.markdown-body p { text-indent: 1.5em; }
+.markdown-body li p,
+.markdown-body blockquote p,
+.markdown-body td p,
+.markdown-body th p { text-indent: 0; }
 .markdown-body h1, .markdown-body h2, .markdown-body h3,
 .markdown-body h4, .markdown-body h5, .markdown-body h6 {
   margin: 22px 0 12px;

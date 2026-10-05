@@ -12,33 +12,11 @@ import type {
   WebviewMessage,
 } from '../shared/protocol';
 import type { AppTheme } from '../shared/theme';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import {
-  markdown,
-  markdownKeymap,
-  markdownLanguage,
-} from '@codemirror/lang-markdown';
-import {
-  bracketMatching,
-  indentOnInput,
-  syntaxHighlighting,
-} from '@codemirror/language';
-import { Compartment, EditorState } from '@codemirror/state';
-import {
-  EditorView,
-  drawSelection,
-  dropCursor,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  highlightSpecialChars,
-  keymap,
-  lineNumbers,
-  placeholder,
-} from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
+import { createDocumentState, themeReconfigurations } from './editorState';
 import { planInsert } from './insert';
 import { previewCss } from './previewCss';
 import { renderMarkdown } from './preview';
-import { editorTheme, markupHighlightStyle } from './theme';
 
 /** How long typing settles before the document is pushed to React Native. */
 const CHANGE_DEBOUNCE_MS = 250;
@@ -66,10 +44,10 @@ let mode: DocumentMode = 'edit';
  */
 let themeReady = false;
 
-// Swapped at runtime instead of rebuilding the editor, which would cost the undo
-// history and the selection every time the theme changed.
-const themeCompartment = new Compartment();
-const highlightCompartment = new Compartment();
+// The theme the editor currently holds, so that replacing the document can put
+// the same theme into the new state rather than losing it — which is exactly
+// what used to happen on every file open.
+let currentTheme: AppTheme | null = null;
 
 function post(message: WebviewMessage): void {
   const bridge = (
@@ -100,42 +78,12 @@ function flushChange(): void {
   post({ type: 'change', content: view.state.doc.toString() });
 }
 
-const editorExtensions = [
-  lineNumbers(),
-  highlightActiveLineGutter(),
-  highlightSpecialChars(),
-  history(),
-  drawSelection(),
-  dropCursor(),
-  EditorState.allowMultipleSelections.of(true),
-  indentOnInput(),
-  bracketMatching(),
-  highlightActiveLine(),
-  EditorView.lineWrapping,
-  placeholder('Начните печатать Markdown…'),
-  markdown({ base: markdownLanguage }),
-  themeCompartment.of([]),
-  highlightCompartment.of([]),
-  // Markdown is not prose: autocorrect and autocapitalisation would rewrite
-  // syntax as the user types it.
-  EditorView.contentAttributes.of({
-    autocapitalize: 'off',
-    autocorrect: 'off',
-    spellcheck: 'false',
-  }),
-  // `markdownKeymap` first so Enter continues lists and quotes, and Backspace
-  // removes one level of Markdown markup, as it does in VS Code.
-  keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap]),
-  EditorView.updateListener.of(update => {
-    if (update.docChanged) {
-      scheduleChange(update.state.doc.toString());
-    }
-  }),
-];
-
 const view = new EditorView({
   parent: editorHost,
-  state: EditorState.create({ doc: '', extensions: editorExtensions }),
+  // The theme is null until the host sends one, moments later; the extension
+  // list is built from it either way, which is what keeps a document opened
+  // later from dropping the theme.
+  state: createDocumentState('', currentTheme, scheduleChange),
 });
 
 function revealPanes(): void {
@@ -154,14 +102,8 @@ function renderPreview(): void {
  * remaining colours through custom properties.
  */
 function setTheme(theme: AppTheme): void {
-  view.dispatch({
-    effects: [
-      themeCompartment.reconfigure(editorTheme(theme)),
-      highlightCompartment.reconfigure(
-        syntaxHighlighting(markupHighlightStyle(theme)),
-      ),
-    ],
-  });
+  currentTheme = theme;
+  view.dispatch({ effects: themeReconfigurations(theme) });
 
   previewStyles.textContent = previewCss(theme);
 
@@ -196,9 +138,7 @@ function setDocument(content: string): void {
     window.clearTimeout(pendingChange);
     pendingChange = null;
   }
-  view.setState(
-    EditorState.create({ doc: content, extensions: editorExtensions }),
-  );
+  view.setState(createDocumentState(content, currentTheme, scheduleChange));
   if (mode === 'preview') {
     renderPreview();
   }
