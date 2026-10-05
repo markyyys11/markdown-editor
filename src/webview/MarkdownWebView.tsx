@@ -1,11 +1,4 @@
-import React, {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {StyleSheet} from 'react-native';
 import {WebView as UntypedWebView} from 'react-native-webview';
 import type {WebViewMessageEvent, WebViewProps} from 'react-native-webview';
@@ -30,14 +23,18 @@ const WebView = UntypedWebView as unknown as React.ComponentType<
   WebViewProps & {ref?: React.Ref<WebViewHandle>}
 >;
 
-export type MarkdownWebViewHandle = {
-  /** Switches between the Markdown source and the rendered preview. */
-  setMode(mode: DocumentMode): void;
-  /** Replaces the document and its undo history, as when a file is opened. */
-  setDocument(content: string): void;
-};
-
 type Props = {
+  /**
+   * The document to display. Typing never comes back through here — the WebView
+   * owns the text while it is being edited, and echoing keystrokes back would
+   * fight the caret. This arrives only when a file is opened or reloaded.
+   */
+  document: string;
+  /**
+   * Bumped on every load so that reopening a file whose text is unchanged still
+   * replaces the editor's document and clears its undo history.
+   */
+  documentKey: number;
   mode: DocumentMode;
   onChangeText(content: string): void;
   onOpenLink(href: string): void;
@@ -49,18 +46,39 @@ type Handlers = Pick<Props, 'onChangeText' | 'onOpenLink' | 'onError'>;
 /**
  * Hosts the CodeMirror editor and the GitHub-style preview.
  *
- * The WebView is the source of truth for the text while the user types: the
- * host is told about edits (`change`) but never pushes them back, which would
- * fight the caret. `setDocument` is therefore reserved for opening a file.
+ * The document is handed over as a prop rather than through an imperative
+ * `setDocument`. That is the whole point of the shape: the value is already
+ * present at mount time, so it cannot be lost to a ref that is still null. An
+ * earlier version called `setDocument` from the screen right after
+ * `setStatus('ready')`, before React had re-rendered and mounted this
+ * component — the optional call silently did nothing and every file opened
+ * empty.
+ *
+ * The queue below is still needed, but for a different gap: this component can
+ * be mounted before the page inside the WebView has finished booting and
+ * announced `ready`.
  */
-function MarkdownWebViewImpl(
-  {mode, onChangeText, onOpenLink, onError}: Props,
-  ref: React.ForwardedRef<MarkdownWebViewHandle>,
-) {
+export function MarkdownWebView({
+  document,
+  documentKey,
+  mode,
+  onChangeText,
+  onOpenLink,
+  onError,
+}: Props) {
   const webView = useRef<WebViewHandle | null>(null);
   const ready = useRef(false);
-  const queue = useRef<HostMessage[]>([]);
   const modeRef = useRef(mode);
+  /**
+   * The text the page should be showing: the loaded document, and then every
+   * edit the page itself reports.
+   *
+   * A page that has not booted yet — or that restarted after Android reclaimed
+   * its renderer — comes up empty and has to be handed this again. That is also
+   * why the document is a prop rather than an imperative call: it is already
+   * here when the page first asks.
+   */
+  const currentText = useRef(document);
 
   // Callbacks live in a ref so the message handler can stay referentially
   // stable, which keeps the WebView from re-rendering on every keystroke.
@@ -75,37 +93,30 @@ function MarkdownWebViewImpl(
     webView.current?.postMessage(JSON.stringify(message));
   }, []);
 
-  const send = useCallback(
-    (message: HostMessage) => {
+  const sendDocument = useCallback(
+    (content: string) => {
+      currentText.current = content;
       if (ready.current) {
-        push(message);
-        return;
+        push({type: 'setDocument', content});
       }
-      // A document sent before the bundle finished booting replaces any earlier
-      // one instead of piling up behind it.
-      if (message.type === 'setDocument') {
-        queue.current = queue.current.filter(
-          pending => pending.type !== 'setDocument',
-        );
-      }
-      queue.current.push(message);
+      // While the page is booting this is enough: the `ready` handler sends
+      // whatever is current by then, and only the newest text matters.
     },
     [push],
   );
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      setMode: next => send({type: 'setMode', mode: next}),
-      setDocument: next => send({type: 'setDocument', content: next}),
-    }),
-    [send],
-  );
+  useEffect(() => {
+    sendDocument(document);
+  }, [document, documentKey, sendDocument]);
 
   useEffect(() => {
     modeRef.current = mode;
-    send({type: 'setMode', mode});
-  }, [mode, send]);
+    if (!ready.current) {
+      // Still booting; the `ready` handler sends whichever mode is current then.
+      return;
+    }
+    push({type: 'setMode', mode});
+  }, [mode, push]);
 
   const handleMessage = useCallback(
     (event: WebViewMessageEvent) => {
@@ -122,15 +133,14 @@ function MarkdownWebViewImpl(
       switch (message.type) {
         case 'ready': {
           ready.current = true;
-          // The bundle boots into edit mode, so restate what this screen wants
-          // and only then deliver whatever was queued while it was starting.
+          // The bundle boots into edit mode with an empty document, so state
+          // what this screen wants and hand over the text the page should show.
           push({type: 'setMode', mode: modeRef.current});
-          const pending = queue.current;
-          queue.current = [];
-          pending.forEach(item => push(item));
+          push({type: 'setDocument', content: currentText.current});
           break;
         }
         case 'change':
+          currentText.current = message.content;
           handlers.current.onChangeText(message.content);
           break;
         case 'openLink':
@@ -178,5 +188,3 @@ const styles = StyleSheet.create({
     backgroundColor: palette.canvasDefault,
   },
 });
-
-export const MarkdownWebView = forwardRef(MarkdownWebViewImpl);

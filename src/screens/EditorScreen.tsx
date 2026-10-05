@@ -20,7 +20,6 @@ import {useGitHub} from '../state/AuthContext';
 import {palette, spacing} from '../theme/theme';
 import {openExternalUrl} from '../util/urls';
 import {MarkdownWebView} from '../webview/MarkdownWebView';
-import type {MarkdownWebViewHandle} from '../webview/MarkdownWebView';
 
 const MODES: ReadonlyArray<{value: DocumentMode; label: string}> = [
   {value: 'edit', label: 'Правка'},
@@ -52,7 +51,6 @@ export function EditorScreen({
   onOpenMarkdown,
 }: Props) {
   const client = useGitHub();
-  const webView = useRef<MarkdownWebViewHandle>(null);
   const loadedOnce = useRef(false);
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -61,6 +59,8 @@ export function EditorScreen({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [baseline, setBaseline] = useState('');
+  /** What the editor must display, plus a counter that forces a reload. */
+  const [documentToLoad, setDocumentToLoad] = useState({text: '', key: 0});
   const [sha, setSha] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [mode, setMode] = useState<DocumentMode>('edit');
@@ -82,7 +82,7 @@ export function EditorScreen({
         kind: 'info',
         message: 'Новый файл. Он появится в репозитории после первого коммита.',
       });
-      webView.current?.setDocument('');
+      setDocumentToLoad(current => ({text: '', key: current.key + 1}));
       return;
     }
 
@@ -97,7 +97,7 @@ export function EditorScreen({
       setSha(file.sha);
       setDirty(false);
       setStatus('ready');
-      webView.current?.setDocument(file.text);
+      setDocumentToLoad(current => ({text: file.text, key: current.key + 1}));
     } catch (failure) {
       const message =
         failure instanceof GitHubError
@@ -288,7 +288,8 @@ export function EditorScreen({
       ) : null}
       {status === 'ready' ? (
         <MarkdownWebView
-          ref={webView}
+          document={documentToLoad.text}
+          documentKey={documentToLoad.key}
           mode={mode}
           onChangeText={handleChangeText}
           onOpenLink={handleOpenLink}
