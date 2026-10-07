@@ -31,14 +31,14 @@ export function ThemeSheet({ visible, onClose }: Props) {
       <View style={styles.backdrop}>
         <Pressable
           style={styles.scrim}
-          accessibilityLabel="Закрыть список тем"
+          accessibilityLabel="Close the theme list"
           onPress={onClose}
         />
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>Тема</Text>
+            <Text style={styles.title}>Theme</Text>
             <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.done}>Готово</Text>
+              <Text style={styles.done}>Done</Text>
             </Pressable>
           </View>
           <ThemeList />

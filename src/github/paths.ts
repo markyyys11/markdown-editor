@@ -44,5 +44,5 @@ export function isMarkdownPath(path: string): boolean {
 
 /** Builds a display title for a route, collapsing the root to the repo name. */
 export function displayPath(path: string): string {
-  return path.length === 0 ? 'Корень репозитория' : path;
+  return path.length === 0 ? 'Repository root' : path;
 }

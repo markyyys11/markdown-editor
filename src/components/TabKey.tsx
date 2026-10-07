@@ -22,7 +22,7 @@ export function TabKey({ onPress }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Табуляция"
+      accessibilityLabel="Tab"
       onPress={onPress}
       android_ripple={{ color: theme.ui.borderDefault }}
       style={({ pressed }) => [styles.key, pressed ? styles.pressed : null]}

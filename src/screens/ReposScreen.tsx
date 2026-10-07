@@ -45,7 +45,7 @@ export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
         setError(
           failure instanceof GitHubError
             ? failure.message
-            : 'Не удалось загрузить репозитории.',
+            : 'Could not load repositories.',
         );
         setStatus(current => (current === 'loading' ? 'error' : current));
       }
@@ -71,14 +71,14 @@ export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
 
   const body = (() => {
     if (status === 'loading') {
-      return <CenteredMessage title="Загрузка репозиториев" busy />;
+      return <CenteredMessage title="Loading repositories" busy />;
     }
     if (status === 'error') {
       return (
         <CenteredMessage
-          title="Не удалось загрузить"
+          title="Could not load"
           description={error ?? undefined}
-          actionLabel="Повторить"
+          actionLabel="Retry"
           onAction={refresh}
         />
       );
@@ -89,7 +89,7 @@ export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
         keyExtractor={repo => String(repo.id)}
         renderItem={({ item }) => (
           <ListRow
-            title={item.isPrivate ? `${item.name} · приватный` : item.name}
+            title={item.isPrivate ? `${item.name} · private` : item.name}
             subtitle={item.fullName}
             trailing={formatDay(item.updatedAt)}
             onPress={() => onOpenRepo(item)}
@@ -106,14 +106,14 @@ export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
         contentContainerStyle={repos.length === 0 ? styles.empty : undefined}
         ListEmptyComponent={
           <CenteredMessage
-            title="Репозиториев нет"
-            description="У токена нет доступа ни к одному репозиторию."
+            title="No repositories"
+            description="The token has no access to any repository."
           />
         }
         ListFooterComponent={
           mayHaveMore ? (
             <Button
-              label="Показать ещё"
+              label="Show more"
               variant="secondary"
               busy={loadingMore}
               onPress={loadMore}
@@ -128,12 +128,12 @@ export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
   return (
     <View style={styles.root}>
       <ScreenHeader
-        title="Репозитории"
+        title="Repositories"
         subtitle={user?.login ?? 'GitHub'}
         actions={[
-          { label: 'Тема', onPress: onOpenThemes },
+          { label: 'Theme', onPress: onOpenThemes },
           {
-            label: 'Выйти',
+            label: 'Sign out',
             onPress: () => {
               void signOut();
             },
@@ -144,7 +144,7 @@ export function ReposScreen({ onOpenRepo, onOpenThemes }: Props) {
         <Banner
           kind="error"
           message={error}
-          actionLabel="Повторить"
+          actionLabel="Retry"
           onAction={refresh}
         />
       ) : null}

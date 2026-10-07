@@ -9,11 +9,11 @@ import { Alert, BackHandler } from 'react-native';
  */
 export function confirmDiscard(onConfirm: () => void): void {
   Alert.alert(
-    'Есть несохранённые правки',
-    'Изменения не закоммичены и будут потеряны.',
+    'Unsaved changes',
+    'Your changes are not committed and will be lost.',
     [
-      { text: 'Остаться', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: onConfirm },
+      { text: 'Stay', style: 'cancel' },
+      { text: 'Leave', style: 'destructive', onPress: onConfirm },
     ],
   );
 }

@@ -99,7 +99,7 @@ describe('readFile', () => {
       client().readFile('o', 'r', 'huge.md', 'main'),
     );
 
-    expect(failure.message).toMatch(/1 МБ/);
+    expect(failure.message).toMatch(/1 MB/);
   });
 });
 
@@ -231,7 +231,7 @@ describe('listing', () => {
       client().listDirectory('Altey', 'lab-docs', 'a.md', 'main'),
     );
 
-    expect(failure.message).toMatch(/каталог/);
+    expect(failure.message).toMatch(/directory/);
   });
 
   it('lists branch names', async () => {
@@ -296,7 +296,7 @@ describe('error classification', () => {
     const failure = await failureOf(client().getUser());
 
     expect(failure.detail).toBe('Bad credentials');
-    expect(failure.message).toMatch(/Токен отклонён/);
+    expect(failure.message).toMatch(/token was rejected/);
   });
 
   it('survives an error body that is not JSON', async () => {

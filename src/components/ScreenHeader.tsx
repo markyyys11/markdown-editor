@@ -35,12 +35,12 @@ export function ScreenHeader({ title, subtitle, onBack, actions = [] }: Props) {
         {onBack !== undefined ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Назад"
+            accessibilityLabel="Back"
             hitSlop={10}
             onPress={onBack}
             style={styles.back}
           >
-            <Text style={styles.backLabel}>‹ Назад</Text>
+            <Text style={styles.backLabel}>‹ Back</Text>
           </Pressable>
         ) : null}
         <View style={styles.titles}>

@@ -38,7 +38,7 @@ export function TokenScreen() {
         setError(
           failure instanceof GitHubError
             ? failure.message
-            : 'Не удалось проверить токен. Попробуйте ещё раз.',
+            : 'Could not verify the token. Try again.',
         );
       })
       .finally(() => setBusy(false));
@@ -58,11 +58,12 @@ export function TokenScreen() {
     >
       <Text style={styles.title}>Markdown Editor</Text>
       <Text style={styles.lead}>
-        Правка Markdown-документов прямо в репозиториях GitHub: исходник с
-        подсветкой синтаксиса, просмотр как на github.com и коммит с телефона.
+        Edit Markdown documents right inside GitHub repositories: the source
+        with syntax highlighting, a rendered preview and committing from the
+        phone.
       </Text>
 
-      <Text style={styles.label}>Личный токен доступа</Text>
+      <Text style={styles.label}>Personal access token</Text>
       <TextInput
         value={token}
         onChangeText={setToken}
@@ -80,7 +81,7 @@ export function TokenScreen() {
       {error !== null ? <Text style={styles.error}>{error}</Text> : null}
 
       <Button
-        label="Войти"
+        label="Sign in"
         onPress={submit}
         busy={busy}
         disabled={trimmed.length === 0}
@@ -88,20 +89,21 @@ export function TokenScreen() {
       />
 
       <View style={styles.help}>
-        <Text style={styles.helpTitle}>Как получить токен</Text>
+        <Text style={styles.helpTitle}>How to get a token</Text>
         <Text style={styles.helpText}>
-          1. Откройте настройки токенов GitHub и создайте новый токен.
+          1. Open the GitHub token settings and create a new token.
         </Text>
         <Text style={styles.helpText}>
-          2. Классическому токену достаточно области{' '}
-          <Text style={styles.code}>repo</Text>; токену с тонкими правами —
-          разрешение <Text style={styles.code}>Contents: Read and write</Text>.
+          2. A classic token only needs the{' '}
+          <Text style={styles.code}>repo</Text> scope; a fine-grained token
+          needs the <Text style={styles.code}>Contents: Read and write</Text>{' '}
+          permission.
         </Text>
         <Text style={styles.helpText}>
-          3. Скопируйте токен и вставьте его в поле выше.
+          3. Copy the token and paste it into the field above.
         </Text>
         <Button
-          label="Открыть настройки GitHub"
+          label="Open GitHub settings"
           variant="secondary"
           onPress={() => {
             void openExternalUrl(TOKEN_SETTINGS_URL);
@@ -111,8 +113,8 @@ export function TokenScreen() {
       </View>
 
       <Text style={styles.footnote}>
-        Токен сохраняется в защищённом хранилище Android (Keystore) и
-        используется только для запросов к api.github.com.
+        The token is kept in the Android secure storage (Keystore) and is used
+        only for requests to api.github.com.
       </Text>
     </ScrollView>
   );

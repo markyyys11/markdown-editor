@@ -196,7 +196,7 @@ const onRawMessage = (event: Event): void => {
   try {
     parsed = JSON.parse(data);
   } catch {
-    post({ type: 'error', message: 'Хост прислал не-JSON сообщение' });
+    post({ type: 'error', message: 'The host sent a non-JSON message' });
     return;
   }
   if (typeof parsed !== 'object' || parsed === null) {

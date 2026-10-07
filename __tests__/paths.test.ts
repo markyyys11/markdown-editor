@@ -86,7 +86,7 @@ describe('isMarkdownPath', () => {
 
 describe('displayPath', () => {
   it('names the repository root', () => {
-    expect(displayPath('')).toBe('Корень репозитория');
+    expect(displayPath('')).toBe('Repository root');
     expect(displayPath('docs')).toBe('docs');
   });
 });

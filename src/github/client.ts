@@ -25,15 +25,15 @@ export type GitHubErrorKind =
   | 'unknown';
 
 const KIND_MESSAGES: Record<GitHubErrorKind, string> = {
-  auth: 'Токен отклонён. Проверьте, что он действителен и не истёк.',
+  auth: 'The token was rejected. Check that it is valid and has not expired.',
   forbidden:
-    'У токена нет прав на это действие. Нужен доступ к содержимому репозитория.',
+    'The token is not allowed to do this. It needs access to the repository contents.',
   notFound:
-    'Не найдено. Возможно, файл удалён или у токена нет доступа к репозиторию.',
-  conflict: 'Файл изменился на GitHub после того, как вы его открыли.',
-  rateLimit: 'GitHub ограничил частоту запросов. Попробуйте позже.',
-  network: 'Нет связи с GitHub. Проверьте подключение к интернету.',
-  unknown: 'Не удалось выполнить запрос к GitHub.',
+    'Not found. The file may have been deleted, or the token may have no access to the repository.',
+  conflict: 'The file changed on GitHub after you opened it.',
+  rateLimit: 'GitHub rate-limited the request. Try again later.',
+  network: 'No connection to GitHub. Check your internet connection.',
+  unknown: 'The request to GitHub failed.',
 };
 
 export class GitHubError extends Error {
@@ -235,7 +235,7 @@ export class GitHubClient {
         'unknown',
         0,
         'expected a directory listing',
-        'По этому пути лежит файл, а не каталог.',
+        'This path is a file, not a directory.',
       );
     }
     return entries.map(entry => ({
@@ -263,7 +263,7 @@ export class GitHubClient {
         'unknown',
         0,
         `unexpected encoding: ${file.encoding ?? 'missing'}`,
-        'Файл слишком велик: GitHub отдаёт содержимое только до 1 МБ.',
+        'The file is too large: GitHub only returns contents up to 1 MB.',
       );
     }
     return { path: file.path, sha: file.sha, text: base64ToUtf8(file.content) };

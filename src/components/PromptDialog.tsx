@@ -80,7 +80,7 @@ export function PromptDialog({
           {error !== null ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.buttons}>
             <Button
-              label="Отмена"
+              label="Cancel"
               variant="secondary"
               onPress={onCancel}
               style={styles.button}

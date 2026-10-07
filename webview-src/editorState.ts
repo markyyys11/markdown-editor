@@ -56,7 +56,7 @@ export function createEditorExtensions(theme: AppTheme | null): Extension[] {
     bracketMatching(),
     highlightActiveLine(),
     EditorView.lineWrapping,
-    placeholder('Начните печатать Markdown…'),
+    placeholder('Start typing Markdown…'),
     markdown({ base: markdownLanguage }),
     themeCompartment.of(theme === null ? [] : [editorTheme(theme)]),
     highlightCompartment.of(

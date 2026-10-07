@@ -13,7 +13,7 @@ import { monoFontStack } from '../../shared/palette';
  * theme arrives.
  */
 const SHELL = `<!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -50,7 +50,7 @@ const SHELL = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-  <div id="boot">Загрузка редактора…</div>
+  <div id="boot">Loading editor…</div>
   <div id="editor" class="pane" hidden></div>
   <div id="preview" class="pane" hidden></div>
   <script>__WEBVIEW_BUNDLE__</script>

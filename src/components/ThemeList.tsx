@@ -55,7 +55,7 @@ function ThemeRow({
           {theme.label}
         </Text>
         <Text style={styles.mode}>
-          {theme.mode === 'dark' ? 'тёмная' : 'светлая'}
+          {theme.mode === 'dark' ? 'dark' : 'light'}
         </Text>
       </View>
       <View style={styles.swatch}>
@@ -95,7 +95,7 @@ export function ThemeList({ onPicked }: Props) {
       <TextInput
         value={query}
         onChangeText={setQuery}
-        placeholder="Поиск темы"
+        placeholder="Search themes"
         autoCapitalize="none"
         autoCorrect={false}
         spellCheck={false}
@@ -117,9 +117,7 @@ export function ThemeList({ onPicked }: Props) {
           />
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            Ни одна тема не подходит под «{query}»
-          </Text>
+          <Text style={styles.empty}>No theme matches “{query}”</Text>
         }
       />
     </>

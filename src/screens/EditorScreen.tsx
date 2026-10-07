@@ -33,8 +33,8 @@ import { MarkdownWebView } from '../webview/MarkdownWebView';
 import type { MarkdownWebViewHandle } from '../webview/MarkdownWebView';
 
 const MODES: ReadonlyArray<{ value: DocumentMode; label: string }> = [
-  { value: 'edit', label: 'Правка' },
-  { value: 'preview', label: 'Просмотр' },
+  { value: 'edit', label: 'Edit' },
+  { value: 'preview', label: 'Preview' },
 ];
 
 type Notice = {
@@ -97,7 +97,8 @@ export function EditorScreen({
       setStatus('ready');
       setNotice({
         kind: 'info',
-        message: 'Новый файл. Он появится в репозитории после первого коммита.',
+        message:
+          'New file. It will appear in the repository after the first commit.',
       });
       setDocumentToLoad(current => ({ text: '', key: current.key + 1 }));
       return;
@@ -119,7 +120,7 @@ export function EditorScreen({
       const message =
         failure instanceof GitHubError
           ? failure.message
-          : 'Не удалось открыть файл.';
+          : 'Could not open the file.';
       if (loadedOnce.current) {
         // The editor is already usable; a failed refresh must not tear it down.
         setNotice({ kind: 'error', message });
@@ -199,7 +200,10 @@ export function EditorScreen({
         setDirty(false);
         setCommitOpen(false);
         setCommitError(null);
-        setNotice({ kind: 'info', message: 'В файле нет изменений.' });
+        setNotice({
+          kind: 'info',
+          message: 'There are no changes in the file.',
+        });
         return;
       }
 
@@ -228,19 +232,19 @@ export function EditorScreen({
           kind: 'success',
           message:
             nextSha.length > 0
-              ? `Коммит ${nextSha.slice(0, 7)} создан в ветке ${branch}.`
-              : `Коммит создан в ветке ${branch}.`,
+              ? `Commit ${nextSha.slice(0, 7)} created on branch ${branch}.`
+              : `Commit created on branch ${branch}.`,
         });
       } catch (failure) {
         const error = failure instanceof GitHubError ? failure : null;
-        const text = error?.message ?? 'Не удалось создать коммит.';
+        const text = error?.message ?? 'Could not create the commit.';
         if (error !== null && error.kind === 'conflict') {
           // Close the dialog so the reload action below is reachable.
           setCommitOpen(false);
           setNotice({
             kind: 'error',
             message: text,
-            actionLabel: 'Перезагрузить файл',
+            actionLabel: 'Reload file',
             onAction: () => {
               setNotice(null);
               confirmDiscard(() => {
@@ -277,11 +281,11 @@ export function EditorScreen({
         onBack={leave}
         actions={[
           {
-            label: 'Тема',
+            label: 'Theme',
             onPress: () => setThemeSheetOpen(true),
           },
           {
-            label: dirty ? 'Коммит •' : 'Коммит',
+            label: dirty ? 'Commit •' : 'Commit',
             emphasis: dirty,
             disabled: !dirty,
             onPress: () => {
@@ -300,7 +304,7 @@ export function EditorScreen({
         />
         {dirty ? (
           <Button
-            label="Отменить"
+            label="Discard"
             variant="danger"
             onPress={discardEdits}
             style={styles.discard}
@@ -320,13 +324,13 @@ export function EditorScreen({
       ) : null}
 
       {status === 'loading' ? (
-        <CenteredMessage title="Открытие файла" busy />
+        <CenteredMessage title="Opening file" busy />
       ) : null}
       {status === 'error' ? (
         <CenteredMessage
-          title="Не удалось открыть файл"
+          title="Could not open the file"
           description={loadError ?? undefined}
-          actionLabel="Повторить"
+          actionLabel="Retry"
           onAction={() => {
             void load();
           }}
@@ -367,11 +371,11 @@ export function EditorScreen({
 
       <PromptDialog
         visible={commitOpen}
-        title="Коммит"
+        title="Commit"
         description={`${repo.fullName} · ${branch}`}
-        label="Сообщение коммита"
+        label="Commit message"
         initialValue={isNew ? `Create ${path}` : `Update ${path}`}
-        submitLabel="Закоммитить"
+        submitLabel="Commit"
         multiline
         busy={committing}
         error={commitError}

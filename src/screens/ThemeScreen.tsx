@@ -18,12 +18,12 @@ export function ThemeScreen({ onBack }: Props) {
   return (
     <View style={styles.root}>
       <ScreenHeader
-        title="Тема"
+        title="Theme"
         subtitle={theme.label}
         onBack={onBack}
         actions={[
           {
-            label: theme.mode === 'dark' ? 'тёмная' : 'светлая',
+            label: theme.mode === 'dark' ? 'dark' : 'light',
             onPress: () => {},
             disabled: true,
           },

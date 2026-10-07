@@ -12,7 +12,7 @@ import { useThemedStyles } from './src/themes/useThemedStyles';
 function Root() {
   const { status } = useAuth();
   if (status === 'loading') {
-    return <CenteredMessage title="Подключение к GitHub" busy />;
+    return <CenteredMessage title="Connecting to GitHub" busy />;
   }
   if (status === 'signedOut') {
     return <TokenScreen />;

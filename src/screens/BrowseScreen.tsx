@@ -33,9 +33,9 @@ type Props = {
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) {
-    return `${bytes} Б`;
+    return `${bytes} B`;
   }
-  return `${Math.round(bytes / 1024)} КБ`;
+  return `${Math.round(bytes / 1024)} KB`;
 }
 
 /** Browses one directory of a repository at one branch. */
@@ -70,7 +70,7 @@ export function BrowseScreen({
       setError(
         failure instanceof GitHubError
           ? failure.message
-          : 'Не удалось прочитать каталог.',
+          : 'Could not read the directory.',
       );
     }
   }, [branch, client, path, repo.name, repo.owner]);
@@ -107,7 +107,7 @@ export function BrowseScreen({
       const rightGroup = right.type === 'dir' ? 0 : 1;
       return leftGroup !== rightGroup
         ? leftGroup - rightGroup
-        : left.name.localeCompare(right.name, 'ru');
+        : left.name.localeCompare(right.name, 'en');
     });
   }, [entries, onlyMarkdown]);
 
@@ -124,7 +124,7 @@ export function BrowseScreen({
       }
       const fileName = isMarkdownPath(name) ? name : `${name}.md`;
       if (takenNames.has(fileName.toLowerCase())) {
-        setNewFileError('Файл с таким именем уже есть в этой папке.');
+        setNewFileError('A file with that name already exists in this folder.');
         return;
       }
       setNewFileOpen(false);
@@ -136,14 +136,14 @@ export function BrowseScreen({
 
   const body = (() => {
     if (entries === null && error === null) {
-      return <CenteredMessage title="Чтение каталога" busy />;
+      return <CenteredMessage title="Reading the directory" busy />;
     }
     if (entries === null) {
       return (
         <CenteredMessage
-          title="Не удалось прочитать каталог"
+          title="Could not read the directory"
           description={error ?? undefined}
-          actionLabel="Повторить"
+          actionLabel="Retry"
           onAction={reload}
         />
       );
@@ -186,11 +186,11 @@ export function BrowseScreen({
         }
         ListEmptyComponent={
           <CenteredMessage
-            title="Пусто"
+            title="Empty"
             description={
               onlyMarkdown
-                ? 'В этой папке нет ни вложенных каталогов, ни Markdown-файлов.'
-                : 'В этой папке ничего нет.'
+                ? 'This folder has neither subfolders nor Markdown files.'
+                : 'This folder is empty.'
             }
           />
         }
@@ -206,7 +206,7 @@ export function BrowseScreen({
         onBack={onBack}
         actions={[
           {
-            label: '+ Файл',
+            label: '+ File',
             emphasis: true,
             onPress: () => {
               setNewFileError(null);
@@ -216,9 +216,9 @@ export function BrowseScreen({
         ]}
       />
       <View style={styles.toolbar}>
-        <Chip label={`Ветка: ${branch}`} onPress={openBranchPicker} />
+        <Chip label={`Branch: ${branch}`} onPress={openBranchPicker} />
         <Chip
-          label="Только Markdown"
+          label="Markdown only"
           selected={onlyMarkdown}
           onPress={() => setOnlyMarkdown(current => !current)}
         />
@@ -227,7 +227,7 @@ export function BrowseScreen({
         <Banner
           kind="error"
           message={error}
-          actionLabel="Повторить"
+          actionLabel="Retry"
           onAction={reload}
         />
       ) : null}
@@ -242,9 +242,9 @@ export function BrowseScreen({
       >
         <View style={styles.backdrop}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Ветка</Text>
+            <Text style={styles.sheetTitle}>Branch</Text>
             {branches === null ? (
-              <CenteredMessage title="Загрузка веток" busy />
+              <CenteredMessage title="Loading branches" busy />
             ) : (
               <FlatList
                 data={branches}
@@ -252,7 +252,7 @@ export function BrowseScreen({
                 renderItem={({ item }) => (
                   <ListRow
                     title={item}
-                    trailing={item === branch ? 'выбрана' : undefined}
+                    trailing={item === branch ? 'selected' : undefined}
                     onPress={() => {
                       setBranch(item);
                       setPickerOpen(false);
@@ -267,13 +267,13 @@ export function BrowseScreen({
 
       <PromptDialog
         visible={newFileOpen}
-        title="Новый документ"
+        title="New document"
         description={
           path.length === 0 ? repo.fullName : `${repo.fullName}/${path}`
         }
-        label="Имя файла"
+        label="File name"
         initialValue=""
-        submitLabel="Создать"
+        submitLabel="Create"
         error={newFileError}
         onCancel={() => {
           setNewFileOpen(false);

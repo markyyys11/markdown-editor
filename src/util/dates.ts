@@ -2,7 +2,7 @@ const pad = (value: number): string =>
   value < 10 ? `0${value}` : String(value);
 
 /**
- * Formats an ISO timestamp as `дд.мм.гггг`.
+ * Formats an ISO timestamp as `dd.mm.yyyy`.
  *
  * Written out rather than delegated to `toLocaleDateString`, so the output does
  * not depend on whether the Hermes build ships the full ICU data.

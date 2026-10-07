@@ -13,14 +13,14 @@ straight from the phone.
 
 ## Features
 
-- **Two modes.** **Edit** («Правка») shows the whole Markdown source with its formatting
-  highlighted; **Preview** («Просмотр») renders the document: headings, tables, task lists,
-  strikethrough, quotes and fenced code blocks with syntax highlighting.
+- **Two modes.** **Edit** shows the whole Markdown source with its formatting highlighted;
+  **Preview** renders the document: headings, tables, task lists, strikethrough, quotes and
+  fenced code blocks with syntax highlighting.
 - **Repositories.** Sign-in with a personal access token, a paginated repository list,
-  directory navigation, branch switching, a "Markdown only" («только Markdown») filter and
-  creating a new `.md` file.
+  directory navigation, branch switching, a "Markdown only" filter and creating a new `.md`
+  file.
 - **Committing.** A dialog for the commit message; a divergence from GitHub ("the file
-  changed" — «файл изменился») is recognised separately and offers to reload the document.
+  changed") is recognised separately and offers to reload the document.
 - **Working links.** In the preview, relative `.md` files open in the editor and the rest
   open in the browser.
 - **Themes.** 65 VS Code themes with runtime switching; the same palette covers the editor,
@@ -102,4 +102,3 @@ Changes under `webview-src/` need `npm run build:webview`: the generated bundle
 - **Android only.** The `ios/` project has been removed, and Windows is not a target.
 - **Online only.** Everything goes through the GitHub Contents API, so branches cannot be
   merged and files larger than 1 MB are unavailable.
-- **The interface is in Russian.**

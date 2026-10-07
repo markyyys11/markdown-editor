@@ -1,7 +1,7 @@
 import { formatDay } from '../src/util/dates';
 
 describe('formatDay', () => {
-  it('formats a local timestamp as дд.мм.гггг', () => {
+  it('formats a local timestamp as dd.mm.yyyy', () => {
     // Without a timezone suffix the string is parsed as local time, so this
     // assertion holds in every timezone.
     expect(formatDay('2026-10-05T12:00:00')).toBe('05.10.2026');
