@@ -1,196 +1,198 @@
+[English](README.md) | [Русский](README.ru.md)
+
 # Markdown Editor
 
-Редактор Markdown-документов из репозиториев GitHub для Android: правка исходника
-с подсветкой синтаксиса и коммит прямо с телефона.
+A Markdown editor for documents in GitHub repositories, on Android: edit the source with
+syntax highlighting and commit straight from the phone.
 
 <a href="https://boosty.to/mrk_sn/posts/634e5095-2509-45a6-ae5e-190b22807878?share=success_publish_link">
   <img src="https://cdn.simpleicons.org/boosty" alt="Boosty" width="16" height="16">
-  Поддержать
+  Support
 </a>
 
-## Что умеет
+## What it does
 
-- **Два режима.**
-  «Правка» показывает исходник Markdown целиком — все спецсимволы (`#`, `**`, `>`,
-  обратные кавычки, `-`, `|`) видны, а форматирование подсвечивается разными
-  цветами. Размер шрифта при этом не меняется: меняются только цвет, начертание и
-  подчёркивание. «Просмотр» рендерит документ: заголовки,
-  таблицы, списки задач, зачёркивание, цитаты, блоки кода с подсветкой.
-- **Работа с репозиториями.** Вход по личному токену, список репозиториев с
-  пагинацией, обход каталогов, переключение ветки, фильтр «только Markdown»,
-  создание нового `.md`-файла.
-- **Коммит.** Диалог с сообщением коммита; расхождение с GitHub («файл изменился»)
-  распознаётся отдельно и предлагает перезагрузить документ.
-- **Ссылки в превью** работают: относительные `.md` открываются в редакторе,
-  остальные уходят в браузер.
-- **Тёмная тема** в палитре GitHub Dark — одна палитра на редактор, превью и
-  интерфейс приложения.
+- **Two modes.**
+  **Edit** («Правка») shows the whole Markdown source — every special character (`#`, `**`,
+  `>`, backticks, `-`, `|`) is visible, and the formatting is highlighted in different
+  colours. The font size does not change: only colour, weight and underlining do.
+  **Preview** («Просмотр») renders the document: headings, tables, task
+  lists, strikethrough, quotes and fenced code blocks with highlighting.
+- **Working with repositories.** Sign-in with a personal token, a paginated repository list,
+  directory navigation, branch switching, a "Markdown only" («только Markdown») filter, and
+  creating a new `.md` file.
+- **Committing.** A dialog for the commit message; a divergence from GitHub ("the file
+  changed" — «файл изменился») is recognised separately and offers to reload the document.
+- **Links in the preview** work: relative `.md` files open in the editor, the rest go to the
+  browser.
+- **Dark theme** in the GitHub Dark palette — one palette for the editor, the preview and
+  the app's chrome.
 
-## Требования
+## Requirements
 
-| Компонент | Версия |
+| Component | Version |
 | --- | --- |
 | Node | ≥ 22.11 |
 | JDK | 17+ |
 | Android SDK | platform 36, build-tools 36.0.0 |
 | React Native | 0.84.1 |
 
-## Запуск
+## Running
 
 ```shell
 npm install
-npm start          # Metro, в отдельном терминале
-npm run android    # сборка и установка на устройство или эмулятор
+npm start          # Metro, in a separate terminal
+npm run android    # build and install on a device or emulator
 ```
 
-## Токен GitHub
+## GitHub token
 
-Приложению нужен личный токен доступа (PAT):
+The app needs a personal access token (PAT):
 
-- классическому токену достаточно области `repo`;
-- токену с тонкими правами — разрешение `Contents: Read and write`.
+- a classic token needs the `repo` scope;
+- a fine-grained token needs the `Contents: Read and write` permission.
 
-Токен проверяется запросом `GET /user` до сохранения, поэтому отклонённый токен в
-хранилище не попадает, и лежит в Keystore Android через `react-native-keychain`.
+The token is validated with a `GET /user` request before it is stored, so a rejected token
+never reaches storage, and it lives in the Android Keystore through `react-native-keychain`.
 
-## Команды
+## Commands
 
-| Команда | Что делает |
+| Command | What it does |
 | --- | --- |
 | `npm start` | Metro |
-| `npm run android` | сборка и установка на Android |
-| `npm run build:webview` | пересобирает бандл редактора из `webview-src/` |
+| `npm run android` | build and install on Android |
+| `npm run build:webview` | rebuild the editor bundle from `webview-src/` |
 | `npm test` | Jest |
-| `npm run typecheck` | `tsc` для приложения и отдельно для `webview-src` |
+| `npm run typecheck` | `tsc` for the app and separately for `webview-src` |
 | `npm run lint` | ESLint |
 
-## Устройство
+## How it is put together
 
 ```
-shared/          типы протокола сообщений и палитра — общие для обоих миров
-webview-src/     CodeMirror 6 и рендер превью; собирается esbuild-ом
-scripts/         сборка бандла WebView в строковую константу
+shared/          message-protocol types and the palette — shared by both worlds
+webview-src/     CodeMirror 6 and the preview renderer; bundled by esbuild
+scripts/         builds the WebView bundle into a string constant
 src/
-  github/        клиент Contents API, base64, пути, разбор ссылок
-  storage/       хранение токена (Android — Keystore)
-  state/         сессия GitHub (AuthProvider)
-  navigation/    стек экранов и защита несохранённых правок
-  components/    элементы интерфейса
-  screens/       токен → репозитории → каталог → редактор
-  webview/       HTML-оболочка и хост WebView
-  theme/         токены оформления
+  github/        the Contents API client, base64, paths, link parsing
+  storage/       token storage (Android — Keystore)
+  state/         the GitHub session (AuthProvider)
+  navigation/    the screen stack and the unsaved-changes guard
+  components/    interface elements
+  screens/       token → repositories → directory → editor
+  webview/       the HTML shell and the WebView host
+  theme/         design tokens
 ```
 
-### Почему WebView
+### Why a WebView
 
-Редактор — это CodeMirror 6, тот же класс редактора, что лежит в основе VS Code.
-Собрать его напрямую в React Native нельзя, поэтому `webview-src/` собирается
-esbuild-ом в одну строку JavaScript (`src/webview/bundle.generated.ts`, файл
-сгенерирован и закоммичен), а хост подставляет её в HTML. Ручной шаг сборки не
-нужен: `npm start` работает сразу, а `npm run build:webview` требуется только
-после правок в `webview-src/`.
+The editor is CodeMirror 6, the same class of editor that underpins VS Code. It cannot be
+built directly into React Native, so `webview-src/` is bundled by esbuild into a single line
+of JavaScript (`src/webview/bundle.generated.ts`, a generated and committed file), and the
+host inlines it into the HTML. No manual build step is needed: `npm start` works right away,
+and `npm run build:webview` is only required after changes under `webview-src/`.
 
-Хост и страница общаются сообщениями (`shared/protocol.ts`): хост присылает
-`setTheme`, `setMode`, `setDocument` и `insert`, страница отвечает `ready`,
-`change`, `openLink` и `error`. Документ передаётся **свойством**, а не императивным
-вызовом: значение уже есть в момент монтирования, поэтому его нельзя потерять.
-Императивно отправляются только команды в ответ на жест — вставка символа, — и это
-безопасно, потому что к моменту нажатия страница заведомо смонтирована.
+The host and the page talk in messages (`shared/protocol.ts`): the host sends `setTheme`,
+`setMode`, `setDocument` and `insert`, and the page answers `ready`, `change`, `openLink` and
+`error`. The document is passed as a **prop**, not through an imperative call: the value is
+already there at mount time, so it cannot be lost. Only commands that answer a gesture —
+inserting a symbol — are sent imperatively, and that is safe because by the time a key is
+tapped the page is mounted for sure.
 
-Тема приходит первой: страница держит панели скрытыми до неё, поэтому редактор не
-успевает нарисоваться в палитре, которая не принадлежит ни одной теме. А фон
-оболочки прозрачный — за ним виден контейнер React Native, уже окрашенный в
-активную тему, поэтому при светлой теме нет тёмной вспышки при открытии файла.
+The theme arrives first: the page keeps its panes hidden until it does, so the editor never
+gets a chance to paint in a palette that belongs to no theme. And the shell's background is
+transparent — behind it is the React Native container, already painted in the active theme,
+so with a light theme there is no dark flash when a file opens.
 
-До `ready` имеет смысл запомнить ровно одно — текущий текст: ссылка на него
-обновляется и при наборе, и при перезагрузке страницы, а `ready` отправляет её
-заново. Это же восстанавливает содержимое, если Android отберёт рендерер WebView.
+Before `ready`, exactly one thing is worth remembering — the current text: the reference to
+it is updated both while typing and when the page reloads, and `ready` sends it again. That
+is also what restores the content if Android reclaims the WebView's renderer.
 
-### Превью
+### Preview
 
-Стили превью свои, а не из пакета: цвета берутся из тех же ключей, которыми VSCode
-рисует свой предпросмотр Markdown (`textLink`, `textBlockQuote`, `textCodeBlock`,
-`textPreformat`), поэтому превью следует теме так же, как это делает сам VSCode.
-Разметку делает `markdown-it` (таблицы, зачёркивание, списки задач, автолинки),
-блоки кода — `highlight.js` с раскраской из `tokenColors` темы, а сырой HTML из
-документа проходит через `DOMPurify`: пользователь открывает чужие репозитории, и
-без санитайза документ мог бы дотянуться до моста в React Native.
+The preview has styles of its own rather than a package's: the colours come from the same
+keys VS Code uses to draw its own Markdown preview (`textLink`, `textBlockQuote`,
+`textCodeBlock`, `textPreformat`), so the preview follows the theme the way VS Code itself
+does. The markup is produced by `markdown-it` (tables, strikethrough, task lists,
+autolinks), code blocks by `highlight.js` with colours from the theme's `tokenColors`, and
+any raw HTML in the document goes through `DOMPurify`: the user opens other people's
+repositories, and without sanitising, a document could reach the bridge into React Native.
 
-Пакетные стили здесь не подошли бы: у `github-markdown-css` цвета зашиты
-литералами, переопределять их пришлось бы поселекторно, а всё непереопределённое
-осталось бы в чужой палитре — что и вылезает на светлой теме.
+Package styles would not have fitted here: `github-markdown-css` hard-codes its colours as
+literals, so overriding them would have to be done selector by selector, and everything not
+overridden would stay in someone else's palette — which is exactly what shows up on a light
+theme.
 
-### Откуда берутся темы
+### Where the themes come from
 
-`npm run themes` читает установленное расширение
-(`%USERPROFILE%\.vscode\extensions\beardedbear.beardedtheme-*`), прогоняет каждую
-тему через правила из `src/themes/mapVscodeTheme.ts` и записывает результат в
-`src/themes/generated/themes.ts`. Файл закоммичен, поэтому сборка приложения не
-требует ни VSCode, ни самого расширения на машине.
+`npm run themes` reads the installed extension
+(`%USERPROFILE%\.vscode\extensions\beardedbear.beardedtheme-*`), runs every theme through
+the rules in `src/themes/mapVscodeTheme.ts` and writes the result to
+`src/themes/generated/themes.ts`. The file is committed, so building the app needs neither
+VS Code nor the extension on the machine.
 
-Подсветка берётся из **настоящих `tokenColors` темы**, а не подбирается на глаз: для
-каждой роли разметки ищется селектор, являющийся префиксом скоупа токена на границе
-точки, и выигрывает самый длинный — правило TextMate. Разбор по подстроке неверен и
-опасен тем, что незаметен: селектор `punctuation.definition.list.begin.python`
-начинает отвечать на вопрос про markdown-список.
+The highlighting comes from the theme's **real `tokenColors`**, not from a guess: for each
+Markdown role a selector is looked up that is a prefix of the token's scope at a dot
+boundary, and the longest one wins — the TextMate rule. Matching by substring is wrong, and
+dangerously so because it is invisible: the selector
+`punctuation.definition.list.begin.python` would start answering a question about a Markdown
+list.
 
-Шрифт редактора — **Cascadia Mono** (SIL OFL, прямой преемник Consolas, на котором
-этот VSCode фактически и работает). Он вариативный, поэтому один файл 625 КБ даёт
-все начертания, а покрытие кириллицы проверено до вложения: Consolas и Segoe UI
-копировать в APK нельзя — это проприетарные шрифты Microsoft.
+The editor font is **Cascadia Mono** (SIL OFL, the direct successor to Consolas, which this
+VS Code effectively runs on). It is variable, so a single 625 KB file provides every weight,
+and its Cyrillic coverage was verified before it was embedded: Consolas and Segoe UI cannot
+be copied into the APK — they are proprietary Microsoft fonts.
 
-### Почему Contents API, а не настоящий git
+### Why the Contents API and not real git
 
-`isomorphic-git` требует fs-адаптера с `lstat`, `readlink`, `symlink` и `chmod`,
-которых в `react-native-fs` нет ни на Android, ни на Windows. Contents API даёт
-сценарий «открыл файл — изменил — закоммитил» одинаково и без шимов. Цена: только
-онлайн, нельзя мёржить ветки, и файлы больше 1 МБ недоступны (приложение сообщает
-об этом отдельным текстом).
+`isomorphic-git` needs an fs adapter with `lstat`, `readlink`, `symlink` and `chmod`, none of
+which `react-native-fs` has, on Android or on Windows. The Contents API makes the "opened a
+file — changed it — committed it" flow work identically and without shims. The price: online
+only, branches cannot be merged, and files larger than 1 MB are unavailable (the app says so
+in a message of its own).
 
-## Проверено и не проверено
+## What is verified and what is not
 
-**Проверено:** `tsc` для приложения и для `webview-src`, 126 тестов Jest (кодек
-base64 с кириллицей, пути, разбор ссылок, протокол, классификация ошибок GitHub,
-экранирование HTML-оболочки, рендеринг превью, правила вставки символов, а также
-перенос тем: правило TextMate, запасные цвета, полнота и контраст всех 65 тем),
-ESLint без замечаний, сборка бандла через Metro.
+**Verified:** `tsc` for the app and for `webview-src`, 126 Jest tests (the base64 codec with
+Cyrillic, paths, link parsing, the protocol, the classification of GitHub errors, escaping of
+the HTML shell, rendering of the preview, the symbol-insertion rules, and the theme mapping:
+the TextMate rule, fallback colours, and the completeness and contrast of all 65 themes),
+ESLint with no findings, and bundling through Metro.
 
-Отдельно проверено против **живых данных**, а не только на фикстурах:
-`readFile` сверен побайтово с настоящими файлами GitHub (в том числе README на
-41 КБ с 90 не-ASCII символами), а цвета ролей разметки — с тем, что независимо
-показывает разбор установленной темы.
+Also verified against **live data**, not just fixtures: `readFile` was compared byte for byte
+with real files from GitHub (including a 41 KB README with 90 non-ASCII characters), and the
+markup-role colours against what the installed theme's own parse independently reports.
 
-**Не проверено:** сборка `gradlew` и запуск на устройстве — в системе не было JDK
-и Android SDK. Ничего из того, что видно только на устройстве (жестовая клавиатура,
-поведение моста WebView, размер шрифта), на момент написания не запускалось.
+**Not verified:** the `gradlew` build and running on a device — the system had no JDK and no
+Android SDK. Nothing that is only visible on a device (the gesture keypad, the behaviour of
+the WebView bridge, the font size) had been run at the time of writing.
 
-## Известные ограничения и осознанные решения
+## Known limitations and deliberate decisions
 
-- **Размер.** Бандл редактора — ~1.67 МБ минифицированного JS; он лежит строкой в
-  бандле приложения (~3.9 МБ) и разбирается WebView при каждом открытии файла. Из
-  прироста относительно первой версии ~830 КБ — вложенный в base64 шрифт Cascadia
-  Mono: вариативный файл покрывает и все начертания, и кириллицу, но один стоит
-  почти как половина прежнего бандла. Остальные крупные вклады:
-  `highlight.js/lib/common` (162 КБ, 37 языков) и грамматики HTML/CSS/JS (212 КБ),
-  которые `@codemirror/lang-markdown` тянет ради подсветки встроенного в Markdown
-  HTML. Рычаги уменьшения известны и измерены, но намеренно не тронуты: они дают
-  совпадение с VS Code.
-- **Пунктуация разметки в редакторе.** CodeMirror помечает **все** знаки разметки —
-  `#`, `**`, `>`, обратные кавычки, `-` — одним тегом, поэтому `#` заголовка не может
-  быть другого цвета, чем `*` акцента, как это сделано в VSCode. Все знаки получают
-  приглушённый цвет темы: видны, но не спорят с текстом. Текст списков по той же
-  причине остаётся цветом основного текста, а не цветом маркера.
-- **Типы `react-native-webview`.** В 14.0.1 компонент объявлен как
-  `class WebView<P = undefined> extends Component<WebViewProps & P>`: пересечение с
-  `undefined` даёт `never`, и типы отвергают все пропсы. В
-  `src/webview/MarkdownWebView.tsx` это обходится одним документированным
-  приведением типа; лечится обновлением библиотеки.
-- **Навигация.** Вместо `react-navigation` — свой стек и `BackHandler`. Так у
-  приложения на нативный модуль меньше, а несохранённые правки защищают и кнопка
-  «Назад» в шапке, и аппаратная кнопка.
-- **Переходы по ссылкам.** Ссылка открывает новый экран редактора поверх текущего,
-  поэтому возврат сохраняет несохранённые правки документа, из которого ушли.
-- **Токен на не-Android платформах.** `src/storage/tokenStore.ts` (он же
-  используется в тестах) держит токен только в памяти: писать учётные данные в
-  обычное хранилище было бы хуже, чем спросить их заново.
-- **Только Android.** Проект `ios/` удалён, Windows не поддерживается.
+- **Size.** The editor bundle is ~1.67 MB of minified JS; it sits in the app bundle as a
+  string (~3.9 MB) and is parsed by the WebView every time a file is opened. Of the ~830 KB
+  added since the first version, the Cascadia Mono font embedded as base64 accounts for the
+  bulk: a single variable file covers both every weight and Cyrillic, but on its own it costs
+  almost half of the previous bundle. The other large contributors are
+  `highlight.js/lib/common` (162 KB, 37 languages) and the HTML/CSS/JS grammars (212 KB),
+  which `@codemirror/lang-markdown` pulls in to highlight HTML embedded in Markdown. The
+  levers for shrinking it are known and measured, but deliberately left alone: they are what
+  makes it match VS Code.
+- **Markup punctuation in the editor.** CodeMirror tags **all** markup characters — `#`,
+  `**`, `>`, backticks, `-` — with a single tag, so a heading's `#` cannot be a different
+  colour from an emphasis `*`, as it is in VS Code. Every mark gets the theme's dimmed colour:
+  visible, but not competing with the text. List text stays the body colour for the same
+  reason, rather than taking the marker's colour.
+- **`react-native-webview` types.** In 14.0.1 the component is declared as
+  `class WebView<P = undefined> extends Component<WebViewProps & P>`: intersecting with
+  `undefined` yields `never`, and the types reject every prop. In
+  `src/webview/MarkdownWebView.tsx` this is worked around with one documented type
+  assertion; it goes away when the library is updated.
+- **Navigation.** Instead of `react-navigation`, a hand-rolled stack plus `BackHandler`.
+  That leaves the app one native module lighter, and unsaved changes are protected by both
+  the "Back" («Назад») button in the header and the hardware button.
+- **Following links.** A link opens a new editor screen on top of the current one, so going
+  back keeps the unsaved changes of the document you left.
+- **Token on non-Android platforms.** `src/storage/tokenStore.ts` (the one the tests use)
+  keeps the token in memory only: writing credentials to plain storage would be worse than
+  asking for them again.
+- **Android only.** The `ios/` project has been removed, and Windows is not supported.
