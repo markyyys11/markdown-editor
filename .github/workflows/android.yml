@@ -54,15 +54,19 @@ jobs:
       # android/build.gradle pins compileSdk 36, build-tools 36.0.0 and NDK
       # 27.1.12297006. The runner image rarely carries exactly these versions,
       # so install them rather than hoping the preinstalled SDK matches.
+      #
+      # `packages` must be given explicitly: this action defaults to
+      # "tools platform-tools", and `tools` is no longer in the SDK repository,
+      # so its own sdkmanager call fails with "Failed to find package 'tools'"
+      # before any of our steps run.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install SDK platform, build-tools and NDK
-        run: >-
-          sdkmanager
-          "platforms;android-36"
-          "build-tools;36.0.0"
-          "ndk;27.1.12297006"
+        with:
+          packages: >-
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
+            ndk;27.1.12297006
 
       - name: Install dependencies
         run: npm ci
