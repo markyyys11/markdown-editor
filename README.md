@@ -1,7 +1,7 @@
 # Markdown Editor
 
 Редактор Markdown-документов из репозиториев GitHub для Android: правка исходника
-с подсветкой синтаксиса, просмотр «как на github.com» и коммит прямо с телефона.
+с подсветкой синтаксиса и коммит прямо с телефона.
 
 <a href="https://boosty.to/mrk_sn/posts/634e5095-2509-45a6-ae5e-190b22807878?share=success_publish_link">
   <img src="https://cdn.simpleicons.org/boosty" alt="Boosty" width="16" height="16">
