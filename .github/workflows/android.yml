@@ -4,6 +4,11 @@ name: Android APK
 # committed debug keystore (see android/app/build.gradle), which is enough to
 # sideload the file onto a phone; a store build would need a real keystore
 # supplied through repository secrets.
+#
+# A GitHub Release with the APK attached is published when the workflow runs on
+# a `v*` tag, or when a manual run names a tag in the `tag` input. Every other
+# run (pushes to main, pull requests, untagged manual runs) only uploads the APK
+# as a workflow artifact.
 on:
   workflow_dispatch:
     inputs:
@@ -11,6 +16,10 @@ on:
         description: 'ABIs to build (reactNativeArchitectures)'
         required: false
         default: arm64-v8a
+      tag:
+        description: 'Tag to publish a release for (leave empty to only build)'
+        required: false
+        default: ''
   push:
     branches: [main]
     tags: ['v*']
@@ -22,8 +31,11 @@ concurrency:
   group: android-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Publishing a release and, for a manual run, its tag needs write access.
+# Pull-request runs from forks are downgraded automatically and never reach the
+# release steps.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apk:
@@ -32,6 +44,10 @@ jobs:
     # Compiling the New Architecture C++ for even one ABI is slow; a whole build
     # fits well inside this, and the cap keeps a hung Gradle from stalling.
     timeout-minutes: 90
+    env:
+      # Non-empty only when this run should publish a release: a v* tag push, or
+      # a manual run that names one.
+      RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.tag }}
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -91,12 +107,35 @@ jobs:
       - name: Assemble release APK
         working-directory: android
         env:
-          ABIS: ${{ github.event.inputs.abis || 'arm64-v8a' }}
+          ABIS: ${{ inputs.abis || 'arm64-v8a' }}
         run: ./gradlew assembleRelease -PreactNativeArchitectures="$ABIS" --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: markdown-editor-release-apk
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      # Give the asset a name that says what it is once it is downloaded from the
+      # release page, instead of Gradle's generic app-release.apk.
+      - name: Name the APK after the release
+        if: env.RELEASE_TAG != ''
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk \
+            "dist/markdown-editor-${RELEASE_TAG}.apk"
+
+      # `overwrite_files` defaults to true, so re-running a failed job for the
+      # same tag replaces the asset rather than failing on it.
+      - name: Publish the release
+        if: env.RELEASE_TAG != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          # Pins a tag created for a manual run to the commit that was built.
+          target_commitish: ${{ github.sha }}
+          files: dist/*.apk
+          fail_on_unmatched_files: true
+          generate_release_notes: true
