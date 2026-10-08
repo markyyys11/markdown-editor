@@ -7,11 +7,12 @@ import { renderMarkdownHtml } from './render';
  * bridge. Everything therefore goes through DOMPurify, with `<style>` and
  * friends removed so a document cannot restyle or script the pane.
  *
- * `USE_PROFILES.html` keeps form controls, which is what makes Markdown task
- * lists render their disabled checkboxes.
+ * `html` keeps the form controls, which is what makes Markdown task lists render
+ * their disabled checkboxes. `mathMl` keeps the MathML KaTeX emits for formulas,
+ * together with the `display`, `encoding` and `xmlns` attributes it carries.
  */
 const sanitizeOptions = {
-  USE_PROFILES: { html: true },
+  USE_PROFILES: { html: true, mathMl: true },
   ADD_ATTR: ['target', 'rel'],
   FORBID_TAGS: [
     'style',

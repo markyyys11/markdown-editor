@@ -6,7 +6,7 @@ import { renderMarkdownHtml } from '../render';
  * why `render.ts` keeps DOMPurify and the stylesheets out of the way.
  */
 describe('renderMarkdownHtml', () => {
-  it('renders GFM tables with header cells', () => {
+  it('renders GFM tables with header cells and column alignment', () => {
     const html = renderMarkdownHtml(
       [
         '| Показатель | Значение |',
@@ -15,13 +15,14 @@ describe('renderMarkdownHtml', () => {
       ].join('\n'),
     );
     expect(html).toContain('<table>');
+    expect(html).toContain('<thead>');
     expect(html).toContain('<th>Показатель</th>');
-    expect(html).toContain('<td style="text-align:right">140</td>');
+    expect(html).toContain('<td align="right">140</td>');
   });
 
   it('renders strikethrough and inline code', () => {
     const html = renderMarkdownHtml('~~устарело~~ и `КОД`');
-    expect(html).toContain('<s>устарело</s>');
+    expect(html).toContain('<del>устарело</del>');
     expect(html).toContain('<code>КОД</code>');
   });
 
@@ -29,15 +30,14 @@ describe('renderMarkdownHtml', () => {
     const html = renderMarkdownHtml('- [x] готово\n- [ ] в работе');
     expect(html).toContain('contains-task-list');
     expect(html).toContain('task-list-item');
-    expect(html).toContain('type="checkbox"');
-    expect(html).toContain('disabled=""');
-    expect(html).toContain('checked=""');
+    expect(html).toContain('type="checkbox" checked disabled');
   });
 
   it('highlights fenced code when the language is known', () => {
     const html = renderMarkdownHtml('```json\n{"a": 1}\n```');
-    expect(html).toContain('class="hljs');
-    expect(html).toContain('language-json');
+    expect(html).toContain('class="hljs language-json"');
+    expect(html).toContain('hljs-attr');
+    expect(html).toContain('hljs-number');
   });
 
   it('leaves unknown fenced languages escaped and unhighlighted', () => {
@@ -46,7 +46,18 @@ describe('renderMarkdownHtml', () => {
     );
     expect(html).toContain('language-nosuchlang');
     expect(html).not.toContain('hljs-');
-    expect(html).toContain('&lt;script&gt;');
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&#x3C;script>');
+  });
+
+  it('renders inline and display math as MathML', () => {
+    const inline = renderMarkdownHtml('Эйлер: $e^{i\\pi}+1=0$');
+    expect(inline).toContain('<math');
+    expect(inline).toContain('</math>');
+    expect(inline).toContain('<annotation');
+
+    const display = renderMarkdownHtml('$$\n\\int_0^1 x^2\\,dx\n$$');
+    expect(display).toContain('display="block"');
   });
 
   it('keeps raw HTML so that <details> works like it does on GitHub', () => {

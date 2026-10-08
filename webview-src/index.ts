@@ -182,9 +182,18 @@ previewHost.addEventListener('click', event => {
   }
   event.preventDefault();
   const href = anchor.getAttribute('href');
-  if (href) {
-    post({ type: 'openLink', href });
+  if (!href) {
+    return;
   }
+  // In-page anchors — heading links and footnote references — have to be
+  // resolved inside the pane; the host would only ever see a bare fragment.
+  if (href.startsWith('#')) {
+    document
+      .getElementById(decodeURIComponent(href.slice(1)))
+      ?.scrollIntoView({ block: 'center' });
+    return;
+  }
+  post({ type: 'openLink', href });
 });
 
 const onRawMessage = (event: Event): void => {

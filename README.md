@@ -14,8 +14,8 @@ straight from the phone.
 ## Features
 
 - **Two modes.** **Edit** shows the whole Markdown source with its formatting highlighted;
-  **Preview** renders the document: headings, tables, task lists, strikethrough, quotes and
-  fenced code blocks with syntax highlighting.
+  **Preview** renders the document: headings, tables with aligned columns, task lists,
+  strikethrough, quotes, fenced code blocks with syntax highlighting and TeX formulas.
 - **Repositories.** Sign-in with a personal access token, a paginated repository list,
   directory navigation, branch switching, a "Markdown only" filter and creating a new `.md`
   file.
@@ -32,7 +32,7 @@ straight from the phone.
 | --- | --- |
 | App | React Native 0.84.1 (Hermes, New Architecture), TypeScript |
 | Editor | CodeMirror 6 in a WebView |
-| Preview | markdown-it, highlight.js, DOMPurify |
+| Preview | remark/rehype, KaTeX, highlight.js, DOMPurify |
 | WebView bundle | esbuild |
 | Token storage | react-native-keychain (Android Keystore) |
 | GitHub data | Contents API |

@@ -113,7 +113,7 @@ export const previewCss = (theme: AppTheme): string => {
 .markdown-body a:active { text-decoration: underline; }
 .markdown-body strong { font-weight: 700; }
 .markdown-body em { font-style: italic; }
-.markdown-body s { color: ${preview.muted}; }
+.markdown-body s, .markdown-body del { color: ${preview.muted}; }
 .markdown-body blockquote {
   padding: .2em 1em;
   color: ${preview.muted};
@@ -147,17 +147,58 @@ export const previewCss = (theme: AppTheme): string => {
   background-color: ${preview.border};
   margin: 20px 0;
 }
-.markdown-body table { border-collapse: collapse; display: block; max-width: 100%; overflow: auto; }
-.markdown-body th, .markdown-body td { padding: 6px 12px; border: 1px solid ${
-    preview.border
-  }; }
-.markdown-body th { background-color: ${
-    preview.tableHeaderBackground
-  }; font-weight: 600; }
+.markdown-body table {
+  border-collapse: collapse;
+  display: block;
+  max-width: 100%;
+  overflow: auto;
+}
+.markdown-body th, .markdown-body td {
+  padding: 6px 13px;
+  border: 1px solid ${preview.border};
+}
+.markdown-body th {
+  background-color: ${preview.tableHeaderBackground};
+  font-weight: 600;
+}
+/* GFM expresses column alignment as the legacy align attribute, which the
+   browser no longer applies on its own for a styled table. */
+.markdown-body th[align='center'], .markdown-body td[align='center'] { text-align: center; }
+.markdown-body th[align='right'], .markdown-body td[align='right'] { text-align: right; }
 .markdown-body img { max-width: 100%; }
 .markdown-body .contains-task-list { padding-left: .4em; }
 .markdown-body .task-list-item { list-style: none; }
 .markdown-body input[type='checkbox'] { margin: 0 .4em 0 0; }
+/* The footnotes section GitHub appends, including its screen-reader-only
+   heading. */
+.markdown-body .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.markdown-body .footnotes {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid ${preview.border};
+  font-size: .92em;
+  color: ${preview.muted};
+}
+.markdown-body .footnotes ol { padding-left: 1.4em; }
+.markdown-body .footnotes li + li { margin-top: .4em; }
+/* Formulas arrive as MathML, which the WebView draws itself; only the size and
+   the layout of display math need a hand. */
+.markdown-body .katex { font-size: 1.05em; }
+.markdown-body .katex:has(> math[display='block']) {
+  display: block;
+  margin: 14px 0;
+  text-align: center;
+}
 
 ${codeCss(theme)}`;
 };
